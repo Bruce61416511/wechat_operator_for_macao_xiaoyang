@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -97,7 +97,7 @@ class ApplicationService:
             member = member_result.scalar_one_or_none()
             if member:
                 member.tier = app.requested_tier or member.tier
-                member.annual_fee = {"普通會員": 500, "普通會員": 500, "高級會員": 1000}.get(app.requested_tier, 500)
+                member.annual_fee = {"個人會員": 300, "企業會員": 600, "高級會員": 1000}.get(app.requested_tier, 500)
                 member.is_active = True
                 member.updated_at = datetime.now(timezone.utc)
                 app.status = "已入會"
@@ -111,9 +111,9 @@ class ApplicationService:
             real_name=app.applicant_name,
             phone=app.applicant_phone,
             email=app.applicant_email,
-            tier=app.requested_tier or "普通會員",
+            tier=app.requested_tier or "個人會員",
             password_hash=app.password_hash,
-            annual_fee={"普通會員": 500, "普通會員": 500, "高級會員": 1000}.get(app.requested_tier, 500),
+            annual_fee={"個人會員": 300, "企業會員": 600, "高級會員": 1000}.get(app.requested_tier, 500),
         )
         self.db.add(member)
         await self.db.flush()

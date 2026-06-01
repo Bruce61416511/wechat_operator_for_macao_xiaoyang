@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { checkDuplicate } from "../../services/api.js";
 
 const TIER_OPTIONS = [
-  { value: "普通會員", label: "普通會員", desc: "適合個人從業者，年費 500 澳門元" },
-  { value: "高級會員", label: "高級會員", desc: "適合機構/企業，年費 1000 澳門元" },
+  { value: "個人會員", label: "個人會員", desc: "適合個人從業者，年費 300 澳門元" },
+  { value: "企業會員", label: "企業會員", desc: "適合機構/企業，年費 600 澳門元" },
+  { value: "高級會員", label: "高級會員", desc: "高級會員，年費 1000 澳門元" },
 ];
 
 function fieldClass(hasError) {
@@ -128,10 +129,10 @@ export default function BasicInfoForm({ data, onChange, errors }) {
       </div>
 
       <div>
-        <Label required>聯繫電話</Label>
+        <Label required>聯絡電話</Label>
         <input
           className={fieldClass(errors?.applicant_phone)}
-          placeholder="可聯繫到本人的手機號碼"
+          placeholder="可聯絡到本人的手機號碼"
           autoComplete="off"
           value={data.applicant_phone || ""}
           onChange={(e) => set("applicant_phone", e.target.value)}

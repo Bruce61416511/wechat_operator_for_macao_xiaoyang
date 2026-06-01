@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from datetime import datetime
 
 from sqlalchemy import String, DateTime, Boolean, Text, func
@@ -19,7 +19,7 @@ class Member(Base):
     email: Mapped[str | None] = mapped_column(String(100), nullable=True)
     wechat_openid: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False, default="")
-    tier: Mapped[str] = mapped_column(String(20), default="普通會員", nullable=False)
+    tier: Mapped[str] = mapped_column(String(20), default="個人會員", nullable=False)
     annual_fee: Mapped[int] = mapped_column(default=0, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
