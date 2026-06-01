@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.db
+.env
+*.log
+chroma_data/
+uploads/
+backend/backend.rar
+backend/xiaoyang.zip
+node_modules/
+dist/
+.DS_Store

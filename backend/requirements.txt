@@ -1,0 +1,19 @@
+﻿fastapi==0.115.6               # Web framework (API路由、请求/响应处理)
+uvicorn[standard]==0.34.0      # ASGI server (运行FastAPI应用)
+sqlalchemy==2.0.36             # ORM (数据库模型、查询)
+alembic==1.14.1                # 数据库迁移工具
+asyncpg==0.30.0                # PostgreSQL异步驱动
+pydantic==2.10.4               # 数据校验与序列化
+pydantic-settings==2.7.1       # 配置管理 (读取环境变量/.env)
+python-jose[cryptography]==3.3.0  # JWT令牌生成与校验
+passlib[bcrypt]==1.7.4         # 密码哈希加密
+python-multipart==0.0.19       # 表单/文件上传解析
+redis==5.2.1                   # 内存缓存
+httpx==0.28.1                  # 异步HTTP客户端
+openai==1.59.3                 # OpenAI API客户端 (兼容DeepSeek)
+chromadb==0.5.23               # 向量数据库 (知识库/RAG)
+pytest==8.3.4                  # 测试框架
+pytest-asyncio==0.25.0          # 异步测试支持
+ruff==0.8.6                    # 代码检查 & 格式化
+black==24.10.0                 # 代码格式化
+python-dotenv==1.0.1           # 加载.env环境变量
