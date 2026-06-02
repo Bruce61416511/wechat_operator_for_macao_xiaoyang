@@ -102,7 +102,6 @@ const INITIAL_FORM = {
   applicant_name: "",
   id_number: "",
   applicant_phone: "",
-  applicant_email: "",
   applicant_address: "",
   requested_tier: "",
   career_history: "",
@@ -227,9 +226,6 @@ export default function ApplyWorkspace({ onProgressChange }) {
       if (!formData.applicant_name) errs.applicant_name = "請輸入姓名";
       if (!formData.id_number || formData.id_number.length < 15) errs.id_number = "請輸入有效證件號碼";
       if (!formData.applicant_phone || formData.applicant_phone.length < 5) errs.applicant_phone = "請輸入聯繫電話";
-      if (formData.applicant_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.applicant_email)) {
-        errs.applicant_email = "郵箱格式不正確";
-      }
     }
     if (stepIndex === 1) {
       if (!formData.career_history || formData.career_history.trim().length < 10) {

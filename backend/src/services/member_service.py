@@ -25,7 +25,7 @@ class MemberService:
         return result.scalar_one_or_none()
 
     async def update_member(self, member: Member, data: dict) -> Member:
-        allowed_fields = {"phone", "email", "real_name", "address", "career_history", "qualifications", "qualification_files"}
+        allowed_fields = {"phone", "real_name", "address", "career_history", "qualifications", "qualification_files"}
         for k, v in data.items():
             if k in allowed_fields and v is not None:
                 setattr(member, k, v)
@@ -35,7 +35,7 @@ class MemberService:
         return member
 
     async def update_by_staff(self, member: Member, data: dict) -> Member:
-        staff_fields = {"phone", "email", "real_name", "tier", "annual_fee", "is_active"}
+        staff_fields = {"phone", "real_name", "tier", "annual_fee", "is_active"}
         for k, v in data.items():
             if k in staff_fields and v is not None:
                 setattr(member, k, v)
@@ -114,8 +114,8 @@ class MemberService:
     async def export_csv(self) -> str:
         result = await self.db.execute(select(Member))
         members = result.scalars().all()
-        header = "ID,姓名,手機,郵箱,等級,年費,狀態,入會日期\n"
-        rows = [f"{m.id},{m.real_name},{m.phone},{m.email or ''},{m.tier},{m.annual_fee},{'在籍' if m.is_active else '停用'},{m.created_at}" for m in members]
+        header = "ID,姓名,手機,等級,年費,狀態,入會日期\n"
+        rows = [f"{m.id},{m.real_name},{m.phone},{m.tier},{m.annual_fee},{'在籍' if m.is_active else '停用'},{m.created_at}" for m in members]
         return header + "\n".join(rows)
 
     async def create_info_update_application(self, member, data: dict) -> dict:
@@ -133,7 +133,6 @@ class MemberService:
             id_number=temp_idnum,
             applicant_name=data.get("applicant_name", member.real_name),
             applicant_phone=data.get("applicant_phone", member.phone),
-            applicant_email=data.get("applicant_email", member.email),
             applicant_address=data.get("applicant_address", ""),
             career_history=data.get("career_history", ""),
             qualifications=data.get("qualifications", ""),
@@ -167,14 +166,13 @@ class MemberService:
             # no tier change: update member directly
             member.real_name = app.applicant_name
             member.phone = app.applicant_phone
-            member.email = app.applicant_email
             member.updated_at = datetime.now(timezone.utc)
             app.status = "終審通過"
             app.final_review_result = "信息變更-自動通過"
             await self.db.flush()
             app.status = "已入會"
             await self.db.flush()
-            self._audit_log("info_update", member.id, {"fields": ["real_name", "phone", "email"]})
+            self._audit_log("info_update", member.id, {"fields": ["real_name", "phone"]})
             return {"application_id": str(app.id), "status": app.status, "message": "信息修改已生效"}
 
     def _to_admin_dict(self, m: Member) -> dict:
@@ -184,7 +182,6 @@ class MemberService:
             "id_number": m.id_number,
             "real_name": m.real_name,
             "phone": m.phone,
-            "email": m.email,
             "tier": m.tier,
             "annual_fee": m.annual_fee,
             "is_active": m.is_active,
@@ -206,7 +203,6 @@ class MemberService:
             "id_number": m.id_number,
             "real_name": m.real_name,
             "phone": m.phone[:7] + "****" if m.phone else None,
-            "email": m.email,
             "tier": m.tier,
             "annual_fee": m.annual_fee,
             "is_active": m.is_active,

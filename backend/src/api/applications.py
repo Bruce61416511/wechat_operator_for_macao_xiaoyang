@@ -25,7 +25,6 @@ class ApplicationCreate(BaseModel):
     id_number: str = Field(min_length=15, max_length=18)
     applicant_name: str = Field(min_length=1, max_length=50)
     applicant_phone: str = Field(min_length=5, max_length=20)
-    applicant_email: str | None = None
     applicant_address: str | None = None
     career_history: str | None = None
     qualifications: str | None = None
@@ -47,7 +46,6 @@ class FinalReviewRequest(BaseModel):
 class ResubmitRequest(BaseModel):
     applicant_name: str | None = None
     applicant_phone: str | None = None
-    applicant_email: str | None = None
     applicant_address: str | None = None
     career_history: str | None = None
     qualifications: str | None = None
@@ -124,7 +122,6 @@ async def get_application(app_id: str, db: AsyncSession = Depends(get_db)):
             "id_number": app.id_number[:4] + "****" + app.id_number[-2:],
             "applicant_name": app.applicant_name,
             "applicant_phone": app.applicant_phone,
-            "applicant_email": app.applicant_email,
             "applicant_address": app.applicant_address,
             "career_history": app.career_history,
             "qualifications": app.qualifications,
@@ -163,7 +160,6 @@ async def final_review(app_id: str, body: FinalReviewRequest, user: dict = Depen
             if member:
                 tier_changed = app.requested_tier and app.requested_tier != member.tier
                 member.phone = app.applicant_phone
-                member.email = app.applicant_email
                 member.real_name = app.applicant_name
                 if tier_changed:
                     member.tier = app.requested_tier

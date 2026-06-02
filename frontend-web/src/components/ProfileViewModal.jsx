@@ -22,7 +22,6 @@
           <Row label="用戶名" value={profile?.username} />
           <Row label="真實姓名" value={profile?.real_name} />
           <Row label="手機號" value={profile?.phone} />
-          <Row label="郵箱" value={profile?.email || "-"} />
           <Row label="會員級別" value={profile?.tier || "-"} />
           <Row label="年費" value={profile?.annual_fee ? `${profile.annual_fee} 澳門元` : "-"} />
           <Row label="通訊地址" value={profile?.address || "-"} />

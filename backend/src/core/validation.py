@@ -3,7 +3,6 @@ from fastapi import HTTPException
 
 
 PHONE_PATTERN = re.compile(r"^\+\d{7,15}$")
-EMAIL_PATTERN = re.compile(r"^[\w\.\-]+@[\w\-]+\.\w+$")
 ID_NUMBER_PATTERN = re.compile(r"^\d{15,18}$")
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
 XSS_PATTERN = re.compile(r"<script|javascript:|on\w+=|&#", re.IGNORECASE)
@@ -14,11 +13,6 @@ def validate_phone(phone: str) -> str:
         raise HTTPException(status_code=400, detail="手機號格式不正確")
     return phone
 
-
-def validate_email(email: str | None) -> str | None:
-    if email and not EMAIL_PATTERN.match(email):
-        raise HTTPException(status_code=400, detail="郵箱格式不正確")
-    return email
 
 
 def validate_id_number(id_number: str) -> str:

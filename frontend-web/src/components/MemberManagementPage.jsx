@@ -35,7 +35,6 @@ export default function MemberManagementPage() {
       username: user.username || "",
       real_name: user.applicant_name || "",
       phone: user.applicant_phone || "",
-      email: user.applicant_email || "",
       tier: user.requested_tier || "",
       career_history: user.career_history || "",
       qualifications: user.qualifications || "",
@@ -243,7 +242,6 @@ const sortedUsers = [...users].sort((a, b) => {
                 <Field label={"用戶名"} value={editForm.username} onChange={v => updateField("username", v)} />
                 <Field label={"姓名"} value={editForm.real_name} onChange={v => updateField("real_name", v)} />
                 <Field label={"手機"} value={editForm.phone} onChange={v => updateField("phone", v)} />
-                <Field label={"郵箱"} value={editForm.email} onChange={v => updateField("email", v)} />
                 <Field label={"等級"} value={editForm.tier} onChange={v => updateField("tier", v)} />
                 <div>
                   <label className="block mb-1 text-[13px] font-semibold text-[#27383a]">從業經歷</label>

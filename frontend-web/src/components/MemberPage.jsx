@@ -300,8 +300,6 @@ function MemberTopBar({ profile, dropdownOpen, setDropdownOpen, dropdownRef, onL
                     <span className="font-medium">{profile?.phone || "-"}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#6a7679]">郵箱</span>
-                    <span className="font-medium">{profile?.email || "-"}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#6a7679]">會員級別</span>

@@ -15,7 +15,6 @@ router = APIRouter(prefix="/v1/members", tags=["members"])
 
 class MemberUpdate(BaseModel):
     phone: str | None = None
-    email: str | None = None
     real_name: str | None = None
     address: str | None = None
     career_history: str | None = None
@@ -25,7 +24,6 @@ class MemberUpdate(BaseModel):
 
 class StaffMemberUpdate(BaseModel):
     phone: str | None = None
-    email: str | None = None
     real_name: str | None = None
     tier: str | None = None
     annual_fee: int | None = None
@@ -206,7 +204,6 @@ async def export_members_csv(
 class MemberInfoUpdateRequest(BaseModel):
     applicant_name: str | None = None
     applicant_phone: str | None = None
-    applicant_email: str | None = None
     applicant_address: str | None = None
     career_history: str | None = None
     qualifications: str | None = None
@@ -252,7 +249,6 @@ class AdminMemberUpdate(BaseModel):
     username: str | None = None
     real_name: str | None = None
     phone: str | None = None
-    email: str | None = None
     tier: str | None = None
     annual_fee: int | None = None
     is_active: bool | None = None
@@ -354,7 +350,6 @@ async def admin_list_applications(
             "id_number": idnum,
             "applicant_name": app.get("applicant_name", ""),
             "applicant_phone": app.get("applicant_phone", ""),
-            "applicant_email": app.get("applicant_email", ""),
             "status": app.get("status", ""),
             "requested_tier": app.get("requested_tier", ""),
             "submitted_at": app.get("submitted_at"),
@@ -394,7 +389,6 @@ async def admin_applications_summary(
                 "id_number": idnum,
                 "applicant_name": app.applicant_name or "",
                 "applicant_phone": app.applicant_phone or "",
-                "applicant_email": app.applicant_email or "",
                 "status": status,
                 "requested_tier": app.requested_tier or "",
                 "submitted_at": app.submitted_at.isoformat() if app.submitted_at else None,

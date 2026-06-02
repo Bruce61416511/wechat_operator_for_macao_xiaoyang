@@ -16,7 +16,6 @@ class Member(Base):
     id_number: Mapped[str] = mapped_column(String(18), unique=True, nullable=False)
     real_name: Mapped[str] = mapped_column(String(50), nullable=False)
     phone: Mapped[str] = mapped_column(String(20), nullable=False)
-    email: Mapped[str | None] = mapped_column(String(100), nullable=True)
     wechat_openid: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False, default="")
     tier: Mapped[str] = mapped_column(String(20), default="個人會員", nullable=False)

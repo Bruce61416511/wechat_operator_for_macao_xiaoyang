@@ -12,7 +12,6 @@ function Label({ children }) {
 export default function UpdateProfileModal({ profile, onClose, onSaved }) {
   const [form, setForm] = useState({
     phone: profile?.phone || "",
-    email: profile?.email || "",
     address: profile?.address || "",
     career_history: profile?.career_history || "",
     qualifications: profile?.qualifications || "",
@@ -68,7 +67,6 @@ export default function UpdateProfileModal({ profile, onClose, onSaved }) {
         },
         body: JSON.stringify({
           phone: form.phone || undefined,
-          email: form.email || undefined,
           address: form.address || undefined,
           career_history: form.career_history || undefined,
           qualifications: form.qualifications || undefined,
@@ -105,10 +103,6 @@ export default function UpdateProfileModal({ profile, onClose, onSaved }) {
           <div>
             <Label>手機號碼</Label>
             <input className={fieldClass()} value={form.phone} onChange={e => set("phone", e.target.value)} />
-          </div>
-          <div>
-            <Label>郵箱</Label>
-            <input className={fieldClass()} value={form.email} onChange={e => set("email", e.target.value)} />
           </div>
           <div>
             <Label>通訊地址</Label>

@@ -16,7 +16,6 @@ class Application(Base):
     id_number: Mapped[str] = mapped_column(String(18), unique=True, nullable=False, index=True)
     applicant_name: Mapped[str] = mapped_column(String(50), nullable=False)
     applicant_phone: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
-    applicant_email: Mapped[str | None] = mapped_column(String(100), nullable=True)
     applicant_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     career_history: Mapped[str | None] = mapped_column(Text, nullable=True)
     qualifications: Mapped[str | None] = mapped_column(Text, nullable=True)

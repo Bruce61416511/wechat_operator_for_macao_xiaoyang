@@ -142,17 +142,6 @@ export default function BasicInfoForm({ data, onChange, errors }) {
 
       <div className="grid grid-cols-2 gap-5">
         <div>
-          <Label>電子郵箱</Label>
-          <input
-            className={fieldClass(errors?.applicant_email)}
-            placeholder="選填"
-            autoComplete="off"
-            value={data.applicant_email || ""}
-            onChange={(e) => set("applicant_email", e.target.value)}
-          />
-          <ErrorText>{errors?.applicant_email}</ErrorText>
-        </div>
-        <div>
           <Label>申請會員級別</Label>
           <select
             className={fieldClass(false)}
