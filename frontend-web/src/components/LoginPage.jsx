@@ -44,7 +44,7 @@ export default function LoginPage() {
       <div className="w-full max-w-[380px] rounded-[16px] border border-[#dce6e4] bg-white p-6 shadow-[0_2px_20px_rgba(44,36,32,0.06)]">
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="mb-1 block text-[13px] font-medium text-[#6b5e58]">用戶名</label>
+            <label className="mb-1 block text-[13px] font-medium text-[#6b5e58]">郵箱地址</label>
             <input
               className="w-full rounded-[10px] border border-[#dce6e4] bg-[#fdfcfa] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#00836f] focus:bg-white"
               placeholder="請輸入用戶名"

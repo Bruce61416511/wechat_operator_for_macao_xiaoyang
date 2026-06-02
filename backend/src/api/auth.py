@@ -28,13 +28,14 @@ class WxLoginRequest(BaseModel):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(req: LoginRequest, db = Depends(get_db)):
-    result = await db.execute(select(Member).where(Member.username == req.username))
+    username = req.username.strip().lower() if "@" in req.username else req.username.strip()
+    result = await db.execute(select(Member).where(Member.username == username))
     member = result.scalar_one_or_none()
     if not member:
         # Check if user has a rejected application
         from ..models.application import Application
         app_result = await db.execute(
-            select(Application).where(Application.username == req.username)
+            select(Application).where(Application.username == username)
         )
         app = app_result.scalar_one_or_none()
         if app and app.status in ("初審不通過", "終審不通過"):

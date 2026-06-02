@@ -106,6 +106,8 @@ async def list_applications(status: str | None = None, id_number: str | None = N
 
 @router.post("", status_code=201, response_model=dict)
 async def submit_application(body: ApplicationCreate, db: AsyncSession = Depends(get_db)):
+    from ..core.validation import validate_email_username
+    body.username = validate_email_username(body.username)
     svc = ApplicationService(db)
     app = await svc.create_application(body.model_dump())
     return {"application_id": str(app.id), "status": app.status}

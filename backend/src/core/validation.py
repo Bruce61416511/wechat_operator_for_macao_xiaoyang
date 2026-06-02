@@ -3,6 +3,7 @@ from fastapi import HTTPException
 
 
 PHONE_PATTERN = re.compile(r"^\+\d{7,15}$")
+EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 ID_NUMBER_PATTERN = re.compile(r"^\d{15,18}$")
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
 XSS_PATTERN = re.compile(r"<script|javascript:|on\w+=|&#", re.IGNORECASE)

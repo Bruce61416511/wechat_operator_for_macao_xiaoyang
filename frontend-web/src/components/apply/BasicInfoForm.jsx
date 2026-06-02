@@ -44,7 +44,7 @@ export default function BasicInfoForm({ data, onChange, errors }) {
     const username = data.username || "";
     const idNumber = data.id_number || "";
 
-    if (username.length < 2 && idNumber.length < 15) {
+    if (username.length < 6 && idNumber.length < 15) {
       setConflicts({});
       return;
     }
@@ -52,7 +52,7 @@ export default function BasicInfoForm({ data, onChange, errors }) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
-        const u = username.length >= 2 ? username : null;
+        const u = username.length >= 6 ? username : null;
         const id = idNumber.length >= 15 ? idNumber : null;
         if (!u && !id) {
           setConflicts({});
@@ -77,12 +77,13 @@ export default function BasicInfoForm({ data, onChange, errors }) {
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-5">
         <div>
-          <Label required>用戶名</Label>
+          <Label required>郵箱地址</Label>
           <ConflictWarning>{conflicts.username}</ConflictWarning>
           <input
             className={fieldClass(errors?.username || conflicts.username)}
-            placeholder="字母或數字，2-50 位"
+            placeholder="請輸入郵箱地址"
             autoComplete="off"
+            type="email"
             value={data.username || ""}
             onChange={(e) => set("username", e.target.value)}
           />

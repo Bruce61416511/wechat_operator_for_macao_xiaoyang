@@ -12,7 +12,7 @@ class Application(Base):
     __tablename__ = "applications"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    username: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     id_number: Mapped[str] = mapped_column(String(18), unique=True, nullable=False, index=True)
     applicant_name: Mapped[str] = mapped_column(String(50), nullable=False)
     applicant_phone: Mapped[str] = mapped_column(String(20), nullable=False, index=True)

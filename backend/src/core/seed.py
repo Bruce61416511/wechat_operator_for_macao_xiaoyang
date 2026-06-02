@@ -13,14 +13,14 @@ from ..core.security import hash_password
 
 async def seed_root():
     async with async_session_factory() as db:
-        result = await db.execute(select(Member).where(Member.username == "root"))
+        result = await db.execute(select(Member).where(Member.username == "root@macaolive.org"))
         if result.scalar_one_or_none():
             print("root 理事已存在")
             return
         root = Member(
-            username="root",
+            username="root@macaolive.org",
             id_number="000000000000000000",
-            real_name="root",
+            real_name="Root",
             phone="+85300000000",
             tier="理事",
             annual_fee=0,
