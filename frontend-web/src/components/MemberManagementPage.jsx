@@ -177,8 +177,8 @@ const sortedUsers = [...users].sort((a, b) => {
             <table className="w-full text-[14px] table-fixed">
               <thead>
                 <tr className="bg-[#f5f7f6] text-[#4a5c5e] text-[12px] font-semibold">
-                  <th className="px-4 py-3 text-left">用戶名</th>
-                  <th className="px-4 py-3 text-left">姓名</th>
+                  <th className="px-4 py-3 text-left w-[240px]">用戶名</th>
+                  <th className="px-4 py-3 text-left w-[90px]">姓名</th>
                   <th className="pl-4 pr-4 py-3 text-left w-[150px]">身份證號</th>
                   <th className="pl-4 pr-4 py-3 text-left w-[150px]">手機</th>
                   <th className="px-4 py-3 text-left">等級</th>
@@ -196,8 +196,8 @@ const sortedUsers = [...users].sort((a, b) => {
                   const files = parseFiles(u.qualification_files);
                   return (
                     <tr key={u.id} className="border-t border-[#eef3f1] hover:bg-[#fafbfb]">
-                      <td className="px-4 py-3 font-medium text-[#142528]">{u.username}</td>
-                      <td className="px-4 py-3">{truncate(u.applicant_name, 10)}</td>
+                      <td className="px-4 py-3 font-medium text-[#142528] w-[240px]"><span className="block truncate max-w-[220px]" title={u.username}>{u.username}</span></td>
+                      <td className="px-4 py-3 whitespace-nowrap">{truncate(u.applicant_name, 8)}</td>
                       <td className="px-4 py-3 text-[12px] text-[#6a7679] w-[150px]">{u.id_number || "-"}</td>
                       <td className="px-4 py-3 text-[12px] text-[#6a7679] w-[150px]">{u.applicant_phone || "-"}</td>
                       <td className="px-4 py-3">{u.requested_tier || "-"}</td>
