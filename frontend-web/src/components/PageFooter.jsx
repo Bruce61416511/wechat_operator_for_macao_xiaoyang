@@ -1,10 +1,9 @@
-const footerLinks = ['協會介紹', '入會指南', '會員權益', '活動日曆', '資源中心', '幫助中心'];
-const policyLinks = ['隱私政策', '服務條款', '聯繫我們'];
+﻿const policyLinks = ['隱私政策', '服務條款', '聯繫我們'];
 
 export default function PageFooter({ maxWidthClass = 'max-w-[1196px]' }) {
   return (
     <footer className={`mx-auto mt-6 ${maxWidthClass} overflow-hidden rounded-[10px] border border-white/70 bg-white/64 text-[#064f47] shadow-[0_12px_28px_rgba(38,74,78,0.12)] backdrop-blur-xl`}>
-      <div className="grid gap-6 px-7 py-7 md:grid-cols-[1.2fr_1.1fr_0.9fr] md:px-9">
+      <div className="grid gap-6 px-7 py-7 md:grid-cols-[1.2fr_0.9fr] md:px-9">
         <div>
           <img
             alt="澳門直播協會 · 小揚同學"
@@ -15,17 +14,6 @@ export default function PageFooter({ maxWidthClass = 'max-w-[1196px]' }) {
           <p className="mt-4 max-w-[360px] text-[14px] font-medium leading-7 text-[#52676a]">
             爲澳門直播行業從業者、機構與合作伙伴提供入會諮詢、活動報名、資源指引與會員服務支持。
           </p>
-        </div>
-
-        <div>
-          <h2 className="text-[16px] font-bold leading-none text-[#005d50]">快捷入口</h2>
-          <div className="mt-4 grid grid-cols-2 gap-x-7 gap-y-3">
-            {footerLinks.map((link) => (
-              <a className="text-[14px] font-semibold text-[#536469] transition hover:text-[#005d50]" href="#" key={link}>
-                {link}
-              </a>
-            ))}
-          </div>
         </div>
 
         <div>
