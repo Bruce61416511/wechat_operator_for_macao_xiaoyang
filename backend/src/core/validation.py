@@ -9,6 +9,12 @@ MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
 XSS_PATTERN = re.compile(r"<script|javascript:|on\w+=|&#", re.IGNORECASE)
 
 
+def validate_email_username(username: str) -> str:
+    if not EMAIL_PATTERN.match(username):
+        raise HTTPException(status_code=400, detail="請輸入有效的郵箱地址")
+    return username
+
+
 def validate_phone(phone: str) -> str:
     if not PHONE_PATTERN.match(phone):
         raise HTTPException(status_code=400, detail="手機號格式不正確")

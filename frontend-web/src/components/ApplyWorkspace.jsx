@@ -220,8 +220,8 @@ export default function ApplyWorkspace({ onProgressChange }) {
   function validateStep(stepIndex) {
     const errs = {};
     if (stepIndex === 0) {
-      if (!formData.username || formData.username.length < 2) errs.username = "用戶名至少 2 位字母或數字";
-      else if (!/^[a-zA-Z0-9]+$/.test(formData.username)) errs.username = "用戶名只能包含字母和數字";
+      if (!formData.username || formData.username.length < 6) errs.username = "請輸入有效的郵箱地址";
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.username)) errs.username = "請輸入有效的郵箱格式";
       if (!formData.password || formData.password.length < 6) errs.password = "密碼至少 6 位";
       if (!formData.applicant_name) errs.applicant_name = "請輸入姓名";
       if (!formData.id_number || formData.id_number.length < 15) errs.id_number = "請輸入有效證件號碼";

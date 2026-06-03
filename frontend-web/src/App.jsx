@@ -1,4 +1,6 @@
 ﻿import { AuthProvider, useAuth } from "./contexts/AuthContext.jsx";
+
+function getToken() { return sessionStorage.getItem("token"); }
 import HeaderNav from "./components/HeaderNav.jsx";
 import HeroSection from "./components/HeroSection.jsx";
 import AssistantPanel from "./components/AssistantPanel.jsx";
@@ -18,6 +20,7 @@ import HelpCenterPage from "./components/HelpCenterPage.jsx";
 import ResourcesPage from "./components/ResourcesPage.jsx";
 import FinalReviewPage from "./components/FinalReviewPage.jsx";
 import PaymentApprovalPage from "./components/PaymentApprovalPage.jsx";
+import AnnouncementManagementPanel from "./components/AnnouncementManagementPanel.jsx";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -108,6 +111,11 @@ function AppRoutes() {
   if (path === "/about") return <AssociationIntroPage />;
   if (path === "/calendar") return <EventCalendarPage />;
   if (path === "/announcements") return <AnnouncementsPage />;
+  if (path === "/admin/announcements") {
+    if (!getToken()) { window.location.href = "/login"; return null; }
+    try { if (JSON.parse(atob(getToken().split(".")[0])).role !== "root") { window.location.href = "/member"; return null; } } catch { window.location.href = "/login"; return null; }
+    return <AnnouncementManagementPanel />;
+  }
   if (path === "/help") return <HelpCenterPage />;
   if (path === "/resources") return <ResourcesPage />;
 

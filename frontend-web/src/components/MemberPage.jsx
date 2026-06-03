@@ -6,7 +6,7 @@ import BenefitsModal from "./BenefitsModal.jsx";
 import PaymentModal from "./PaymentModal.jsx";
 import { useAuth } from "../contexts/AuthContext";
 import NotificationModal from "./NotificationModal.jsx"
-import ResourceManagementPanel from "./ResourceManagementPanel.jsx";
+import ResourceManagementPanel from "./ResourceManagementPanel.jsx"
 const sidebarItems = [
   { label: '會員中心', active: true, icon: HomeIcon },
   { label: '資料中心', icon: FolderIcon },
@@ -17,6 +17,7 @@ const sidebarItems = [
   { label: '繳費審批', icon: CardIcon, adminOnly: true },
   { label: '會員管理', icon: UsersIcon, adminOnly: true },
   { label: '章程管理', icon: BookmarkIcon, adminOnly: true },
+  { label: '公告管理', icon: BellIcon, adminOnly: true },
 ];
 
 const actions = [  { label: '續費', icon: CardIcon },  ({ label: '更新資料', icon: IdIcon }),
@@ -223,7 +224,7 @@ function MemberSidebar({ onViewProfile, onShowBenefits, unreadCount, onOpenNotif
               ].join(' ')}
               key={item.label}
               type="button"
-              onClick={item.label === "資料中心" ? onShowResourceCenter : item.label === "協會活動" ? () => window.location.href = "/events" : item.label === "會員終審" ? () => window.location.href = "/admin/final-review" : item.label === "繳費審批" ? () => window.location.href = "/admin/payment-approval" : item.label === "會員管理" ? () => window.location.href = "/admin/members" : item.label === "章程管理" ? () => window.location.href = "/admin/constitution" : item.label === "消息通知" ? () => onOpenNotifications() : item.label === "我的權益" ? () => onShowBenefits() : undefined}
+              onClick={function() { if (item.label === "資料中心") onShowResourceCenter(); else if (item.label === "公告管理") window.location.href = "/admin/announcements"; else if (item.label === "協會活動") window.location.href = "/events"; else if (item.label === "會員終審") window.location.href = "/admin/final-review"; else if (item.label === "繳費審批") window.location.href = "/admin/payment-approval"; else if (item.label === "會員管理") window.location.href = "/admin/members"; else if (item.label === "章程管理") window.location.href = "/admin/constitution"; else if (item.label === "消息通知") onOpenNotifications(); else if (item.label === "我的權益") onShowBenefits(); }}
             >
               <Icon />
               <span className="flex-1 text-left">{item.label}</span>
@@ -693,9 +694,10 @@ export default function MemberPage() {
         dropdownRef={dropdownRef}
         onLogout={logout}
       />
-      {activeSection === "resources" ? (
-        <ResourceManagementPanel />
-      ) : (
+      {activeSection === "resources" && <ResourceManagementPanel />}
+
+
+      {activeSection === "dashboard" && (
         <div className="w-full px-3 pb-8">
         <MemberHero profile={profile} onUpdateProfile={() => setShowUpdateModal(true)} onPayment={() => setShowPayment(true)} />
         <div className="mt-4 grid grid-cols-[1fr_380px] items-stretch gap-4">

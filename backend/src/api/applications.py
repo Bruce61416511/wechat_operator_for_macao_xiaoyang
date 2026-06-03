@@ -21,7 +21,7 @@ UPLOAD_DIR = Path("uploads/payment")
 
 
 class ApplicationCreate(BaseModel):
-    username: str = Field(min_length=2, max_length=50, pattern=r"^[a-zA-Z0-9]+$")
+    username: str = Field(min_length=6, max_length=50, pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
     id_number: str = Field(min_length=15, max_length=18)
     applicant_name: str = Field(min_length=1, max_length=50)
     applicant_phone: str = Field(min_length=5, max_length=20)
@@ -73,7 +73,7 @@ async def check_duplicate(
     id_number: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
 ):
-    """檢查用戶名或身份證號是否已被佔用（含申請記錄和已入會會員）"""
+    """檢查郵箱或身份證號是否已被佔用（含申請記錄和已入會會員）"""
     result = {"username_exists": False, "id_number_exists": False}
 
     if username:

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 
 export default function LoginPage() {
@@ -18,7 +18,7 @@ export default function LoginPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!username.trim() || !password) {
-      setError("請輸入用戶名和密碼");
+      setError("請輸入郵箱和密碼");
       return;
     }
     setSubmitting(true);
@@ -47,7 +47,7 @@ export default function LoginPage() {
             <label className="mb-1 block text-[13px] font-medium text-[#6b5e58]">郵箱地址</label>
             <input
               className="w-full rounded-[10px] border border-[#dce6e4] bg-[#fdfcfa] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#00836f] focus:bg-white"
-              placeholder="請輸入用戶名"
+              placeholder="請輸入郵箱地址"
               autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}

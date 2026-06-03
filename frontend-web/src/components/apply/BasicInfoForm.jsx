@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { checkDuplicate } from "../../services/api.js";
 
 const TIER_OPTIONS = [
@@ -60,7 +60,7 @@ export default function BasicInfoForm({ data, onChange, errors }) {
         }
         const result = await checkDuplicate(u, id);
         const next = {};
-        if (result.username_exists) next.username = "該用戶名稱已被佔用，請更換";
+        if (result.username_exists) next.username = "該郵箱已被註冊，請更換";
         if (result.id_number_exists) next.id_number = "該證件號碼已被註冊，請檢查";
         setConflicts(next);
       } catch {
