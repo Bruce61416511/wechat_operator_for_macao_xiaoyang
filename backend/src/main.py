@@ -1,4 +1,4 @@
-import os
+﻿import os
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -16,6 +16,7 @@ from .api.members import router as members_router, router_admin as admin_members
 from .api.events import router as events_router
 from .api.notifications import router as notifications_router
 from .api.announcements import router as announcements_router
+from .api.resources import router as resources_router
 
 setup_logging()
 
@@ -38,6 +39,7 @@ app.include_router(admin_members_router)
 app.include_router(events_router)
 app.include_router(notifications_router)
 app.include_router(announcements_router)
+app.include_router(resources_router)
 
 # 託管舊前端靜態頁面
 frontend_path = Path(__file__).parent.parent.parent / "frontend-web" / "src" / "pages"
@@ -75,6 +77,7 @@ async def startup():
     await init_db()
     from .models.notification import Notification  # ensure table creation
     from .models.announcement import Announcement  # ensure table creation
+    from .models.resource import Resource  # ensure table creation
     from .core.seed import seed_root
     await seed_root()
 

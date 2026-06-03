@@ -5,7 +5,8 @@ import ProfileViewModal from "./ProfileViewModal.jsx";
 import BenefitsModal from "./BenefitsModal.jsx";
 import PaymentModal from "./PaymentModal.jsx";
 import { useAuth } from "../contexts/AuthContext";
-import NotificationModal from "./NotificationModal.jsx";
+import NotificationModal from "./NotificationModal.jsx"
+import ResourceManagementPanel from "./ResourceManagementPanel.jsx";
 const sidebarItems = [
   { label: '會員中心', active: true, icon: HomeIcon },
   { label: '資料中心', icon: FolderIcon },
@@ -197,7 +198,7 @@ function OutlineIcon({ children, className = 'h-6 w-6' }) {
   );
 }
 
-function MemberSidebar({ onViewProfile, onShowBenefits, unreadCount, onOpenNotifications }) {
+function MemberSidebar({ onViewProfile, onShowBenefits, unreadCount, onOpenNotifications, onShowResourceCenter }) {
   const { user } = useAuth();
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-[240px] flex-col overflow-hidden bg-[linear-gradient(180deg,#00463d_0%,#005548_45%,#003f37_100%)] px-3 py-8 text-white shadow-[12px_0_30px_rgba(0,45,40,0.2)]">
@@ -222,7 +223,7 @@ function MemberSidebar({ onViewProfile, onShowBenefits, unreadCount, onOpenNotif
               ].join(' ')}
               key={item.label}
               type="button"
-              onClick={item.label === "資料中心" ? onViewProfile : item.label === "協會活動" ? () => window.location.href = "/events" : item.label === "會員終審" ? () => window.location.href = "/admin/final-review" : item.label === "繳費審批" ? () => window.location.href = "/admin/payment-approval" : item.label === "會員管理" ? () => window.location.href = "/admin/members" : item.label === "章程管理" ? () => window.location.href = "/admin/constitution" : item.label === "消息通知" ? () => onOpenNotifications() : item.label === "我的權益" ? () => onShowBenefits() : undefined}
+              onClick={item.label === "資料中心" ? onShowResourceCenter : item.label === "協會活動" ? () => window.location.href = "/events" : item.label === "會員終審" ? () => window.location.href = "/admin/final-review" : item.label === "繳費審批" ? () => window.location.href = "/admin/payment-approval" : item.label === "會員管理" ? () => window.location.href = "/admin/members" : item.label === "章程管理" ? () => window.location.href = "/admin/constitution" : item.label === "消息通知" ? () => onOpenNotifications() : item.label === "我的權益" ? () => onShowBenefits() : undefined}
             >
               <Icon />
               <span className="flex-1 text-left">{item.label}</span>
@@ -652,6 +653,7 @@ export default function MemberPage() {
   const [allFeedItems, setAllFeedItems] = useState([]);
 
   const [upcomingEvents, setUpcomingEvents] = useState([]);  const [showNotifications, setShowNotifications] = useState(false);
+  const [activeSection, setActiveSection] = useState("dashboard");
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
 
@@ -683,7 +685,7 @@ export default function MemberPage() {
 
   return (
     <main className="min-h-screen bg-[#f8fbf9] bg-[radial-gradient(circle_at_80%_0%,rgba(224,241,238,0.55),transparent_36%)] pl-[240px] text-[#004f46]">
-      <MemberSidebar onViewProfile={() => setShowProfileModal(true)} onShowBenefits={() => setShowBenefits(true)} unreadCount={unreadCount} onOpenNotifications={() => setShowNotifications(true)} />
+      <MemberSidebar onViewProfile={() => setShowProfileModal(true)} onShowBenefits={() => setShowBenefits(true)} unreadCount={unreadCount} onOpenNotifications={() => setShowNotifications(true)} onShowResourceCenter={() => { setActiveSection("resources"); }} />
       <MemberTopBar
         profile={profile}
         dropdownOpen={dropdownOpen}
@@ -691,7 +693,10 @@ export default function MemberPage() {
         dropdownRef={dropdownRef}
         onLogout={logout}
       />
-      <div className="w-full px-3 pb-8">
+      {activeSection === "resources" ? (
+        <ResourceManagementPanel />
+      ) : (
+        <div className="w-full px-3 pb-8">
         <MemberHero profile={profile} onUpdateProfile={() => setShowUpdateModal(true)} onPayment={() => setShowPayment(true)} />
         <div className="mt-4 grid grid-cols-[1fr_380px] items-stretch gap-4">
           <div className="flex h-full flex-col gap-4">
@@ -708,6 +713,7 @@ export default function MemberPage() {
           </div>
         </div>
       </div>
+      )}
           {showProfileModal && (
         <ProfileViewModal profile={profile} onClose={() => setShowProfileModal(false)} />
       )}

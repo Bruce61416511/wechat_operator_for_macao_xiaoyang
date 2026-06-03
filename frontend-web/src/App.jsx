@@ -1,4 +1,4 @@
-import { AuthProvider, useAuth } from "./contexts/AuthContext.jsx";
+﻿import { AuthProvider, useAuth } from "./contexts/AuthContext.jsx";
 import HeaderNav from "./components/HeaderNav.jsx";
 import HeroSection from "./components/HeroSection.jsx";
 import AssistantPanel from "./components/AssistantPanel.jsx";
@@ -12,7 +12,6 @@ import EventCenterPage from "./components/EventCenterPage.jsx";
 import MemberManagementPage from "./components/MemberManagementPage.jsx";
 import ConstitutionPage from "./components/ConstitutionPage.jsx";
 import AssociationIntroPage from "./components/AssociationIntroPage.jsx";
-import MembershipGuidePage from "./components/MembershipGuidePage.jsx";
 import EventCalendarPage from "./components/EventCalendarPage.jsx";
 import AnnouncementsPage from "./components/AnnouncementsPage.jsx";
 import HelpCenterPage from "./components/HelpCenterPage.jsx";
@@ -107,7 +106,6 @@ function AppRoutes() {
   }
 
   if (path === "/about") return <AssociationIntroPage />;
-  if (path === "/guide") return <MembershipGuidePage />;
   if (path === "/calendar") return <EventCalendarPage />;
   if (path === "/announcements") return <AnnouncementsPage />;
   if (path === "/help") return <HelpCenterPage />;
