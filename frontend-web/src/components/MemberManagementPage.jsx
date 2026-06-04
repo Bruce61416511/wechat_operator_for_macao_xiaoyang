@@ -77,6 +77,7 @@ const FIELD_GROUPS = [
       { key: "is_active",   label: "狀態",   render: (v) => statusDot(v) },
       { key: "created_at",  label: "入會時間", render: formatDate },
       { key: "updated_at",  label: "最後更新", render: formatDate },
+      { key: "payment_proof_url", label: "繳費憑證", render: (v) => v ? <a href={BACKEND+v} target="_blank" rel="noreferrer" className="text-[#006252] underline text-[13px] font-medium">查看憑證</a> : <span className="text-[#bcc7c5] text-[13px]">無</span> },
     ],
   },
   {

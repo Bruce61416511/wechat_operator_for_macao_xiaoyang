@@ -291,7 +291,15 @@ async def admin_list_members(
     for item in members:
         member = await svc.get_by_id(uuid.UUID(item["id"]))
         if member:
-            admin_items.append(svc._to_admin_dict(member))
+            from ..models.application import Application
+            from sqlalchemy import select as sa_select
+            admin_dict = svc._to_admin_dict(member)
+            app_result = await db.execute(
+                sa_select(Application).where(Application.member_id == member.id).order_by(Application.submitted_at.desc()).limit(1)
+            )
+            latest_app = app_result.scalar_one_or_none()
+            admin_dict["payment_proof_url"] = latest_app.payment_proof_url if latest_app else None
+            admin_items.append(admin_dict)
     return {"items": admin_items, "total": result["total"], "page": result["page"]}
 
 
