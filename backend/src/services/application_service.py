@@ -114,6 +114,12 @@ class ApplicationService:
             tier=app.requested_tier or "個人會員",
             password_hash=app.password_hash,
             annual_fee=TIER_FEE.get(app.requested_tier, 500),
+            address=app.applicant_address,
+            career_history=app.career_history,
+            qualifications=app.qualifications,
+            qualification_files=app.qualification_files,
+            company_name=app.company_name,
+            business_reg_no=app.business_reg_no,
         )
         self.db.add(member)
         await self.db.flush()
