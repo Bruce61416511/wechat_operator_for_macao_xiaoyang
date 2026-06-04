@@ -21,6 +21,7 @@ import ResourcesPage from "./components/ResourcesPage.jsx";
 import FinalReviewPage from "./components/FinalReviewPage.jsx";
 import PaymentApprovalPage from "./components/PaymentApprovalPage.jsx";
 import AnnouncementManagementPanel from "./components/AnnouncementManagementPanel.jsx";
+import MemberAnalysis from "./components/MemberAnalysis.jsx";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -39,6 +40,7 @@ function HomePage() {
       <HeaderNav />
       <HeroSection />
       <AssistantPanel />
+      <MemberAnalysis />
       <PageFooter />
     </main>
   );

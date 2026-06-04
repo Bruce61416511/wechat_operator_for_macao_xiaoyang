@@ -111,8 +111,7 @@ class MemberService:
     async def auto_update_status(self) -> int:
         """自動更新會員狀態：會費到期→過期"""
         now = datetime.now(timezone.utc)
-        result = await self.db.execute(select(Member).where(Member.is_active.is_(True)))
-        result = await self.db.execute(select(Member).where(Member.is_active.is_(True), Member.expires_at.isnot(None), Member.expires_at < now)
+        result = await self.db.execute(select(Member).where(Member.is_active.is_(True), Member.expires_at.isnot(None), Member.expires_at < now))
         expired = result.scalars().all()
         for m in expired:
             m.is_active = False
