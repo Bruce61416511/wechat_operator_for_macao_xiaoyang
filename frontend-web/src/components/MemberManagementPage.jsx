@@ -1,13 +1,121 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 
-const APPS_API = "/v1/admin/members/applications-summary";
+const API = "/v1/admin/members";
+const BACKEND = "http://localhost:8000";
 
+/* ── Icons ──────────────────────────────── */
+function ChevronIcon({ open }) {
+  return (
+    <svg aria-hidden="true" className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24">
+      <path d="m9 18 6-6-6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
+/* ── Helpers ────────────────────────────── */
+const TABS = ["全部會員", "個人會員", "企業會員", "高級會員", "理事"];
+
+function tierBadge(tier) {
+  const map = {
+    "個人會員": "bg-[#e7f5f0] text-[#006252]",
+    "企業會員": "bg-[#e8f0fb] text-[#1a6090]",
+    "高級會員": "bg-[#fef9e7] text-[#b7950b]",
+    "理事":     "bg-[#f4ecf7] text-[#7b2d8b]",
+  };
+  const cls = map[tier] || "bg-[#f0f3f3] text-[#6a7679]";
+  return <span className={`inline-block rounded-[4px] px-2 py-0.5 text-[12px] font-bold ${cls}`}>{tier || "-"}</span>;
+}
+
+function statusDot(isActive) {
+  return isActive
+    ? <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#0d7d4a]"><span className="h-2 w-2 rounded-full bg-[#0d7d4a]" />在籍</span>
+    : <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#9ba8aa]"><span className="h-2 w-2 rounded-full bg-[#9ba8aa]" />停用</span>;
+}
+
+function maskId(idNum) {
+  if (!idNum) return "-";
+  if (idNum.length <= 6) return idNum;
+  return idNum.slice(0, 4) + "****" + idNum.slice(-4);
+}
+
+function maskPhone(phone) {
+  if (!phone) return "-";
+  if (phone.length <= 7) return phone;
+  return phone.slice(0, 4) + "****";
+}
+
+function formatDate(iso) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function typeLabel(mt) { if (!mt || mt === "????") return <span className="text-[#c53030] text-[11px]">未設定</span>; const map = { individual: "個人", enterprise: "企業 / 機構" }; return map[mt] || mt || "-"; }
+
+function parseFiles(raw) {
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch { return [raw]; }
+}
+
+const FIELD_GROUPS = [
+  {
+    title: "基本信息",
+    fields: [
+      { key: "real_name",   label: "姓名" },
+      { key: "username",    label: "用户名" },
+      { key: "id_number",   label: "身份证", render: maskId },
+      { key: "phone",       label: "手机",   render: maskPhone },
+      { key: "address",     label: "地址" },
+    ],
+  },
+  {
+    title: "會員信息",
+    fields: [
+      { key: "tier",        label: "等級",   render: (v,m) => tierBadge(v) },
+      { key: "member_type", label: "類型" },
+      { key: "annual_fee",  label: "年費",   render: v => v ? `MOP ${v.toLocaleString()}` : "-" },
+      { key: "is_active",   label: "狀態",   render: (v) => statusDot(v) },
+      { key: "created_at",  label: "入會時間", render: formatDate },
+      { key: "updated_at",  label: "最後更新", render: formatDate },
+    ],
+  },
+  {
+    title: "從業 & 資質",
+    enterpriseOnly: false,
+    fields: [
+      { key: "career_history",       label: "從業經歷" },
+      { key: "qualifications",       label: "資質說明" },
+      { key: "qualification_files",  label: "資質文件", render: (v) => {
+        const files = parseFiles(v);
+        if (!files.length) return "-";
+        return files.map((f,i) => <a key={i} href={BACKEND+f} target="_blank" rel="noreferrer" className="text-[#006252] underline text-[13px] mr-2">文件{i+1}</a>);
+      }},
+    ],
+  },
+  {
+    title: "機構專屬",
+    enterpriseOnly: true,
+    fields: [
+      { key: "company_name",      label: "公司名稱" },
+      { key: "business_reg_no",   label: "商業登記號" },
+      { key: "company_logo_url",  label: "公司 Logo", render: (v) => v ? <img src={BACKEND+v} alt="logo" className="h-10 rounded border" /> : "-" },
+      { key: "brand_description", label: "品牌簡介" },
+      { key: "is_featured",       label: "精選展示", render: (v,m) => v ? <span className="text-[#b7950b] font-semibold">● 是 {m.featured_expires_at ? `(至${formatDate(m.featured_expires_at)})` : ""}</span> : "否" },
+    ],
+  },
+];
+
+/* ── Main Component ──────────────────────── */
 export default function MemberManagementPage() {
-  const [users, setUsers] = useState([]);
+  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
+  const [activeTab, setActiveTab] = useState("全部會員");
+  const [search, setSearch] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
   const [editTarget, setEditTarget] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [saving, setSaving] = useState(false);
 
   const token = sessionStorage.getItem("token");
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
@@ -15,11 +123,10 @@ export default function MemberManagementPage() {
   async function fetchData() {
     setLoading(true);
     try {
-      const res = await fetch(APPS_API, { headers: authHeaders });
-      if (res.ok) {
-        const data = await res.json();
-        setUsers(data.items || []);
-      }
+      const res = await fetch(API + "?page_size=200", { headers: authHeaders });
+      if (!res.ok) throw new Error("獲取數據失敗");
+      const data = await res.json();
+      setMembers(data.items || []);
     } catch (e) {
       setMsg(e.message);
     } finally {
@@ -29,16 +136,39 @@ export default function MemberManagementPage() {
 
   useEffect(() => { fetchData(); }, []);
 
-  function openEdit(user) {
-    setEditTarget(user.id);
+  // Filter
+  const filtered = members.filter(m => {
+    const matchTab = activeTab === "全部會員" || m.tier === activeTab;
+    if (!search.trim()) return matchTab;
+    const q = search.toLowerCase();
+    return matchTab && (
+      (m.real_name || "").toLowerCase().includes(q) ||
+      (m.username || "").toLowerCase().includes(q) ||
+      (m.phone || "").toLowerCase().includes(q)
+    );
+  });
+
+  const tierCounts = TABS.reduce((acc, t) => {
+    acc[t] = t === "全部會員" ? members.length : members.filter(m => m.tier === t).length;
+    return acc;
+  }, {});
+
+  // Edit
+  function openEdit(member) {
+    setEditTarget(member.id);
     setEditForm({
-      username: user.username || "",
-      real_name: user.applicant_name || "",
-      phone: user.applicant_phone || "",
-      tier: user.requested_tier || "",
-      career_history: user.career_history || "",
-      qualifications: user.qualifications || "",
-      qualification_files: user.qualification_files || "",
+      real_name: member.real_name || "",
+      phone: member.phone || "",
+      tier: member.tier || "",
+      annual_fee: member.annual_fee || 0,
+      is_active: member.is_active,
+      member_type: member.member_type || "",
+      company_name: member.company_name || "",
+      business_reg_no: member.business_reg_no || "",
+      company_logo_url: member.company_logo_url || "",
+      brand_description: member.brand_description || "",
+      is_featured: member.is_featured || false,
+      featured_expires_at: member.featured_expires_at || "",
     });
   }
 
@@ -47,13 +177,9 @@ export default function MemberManagementPage() {
   }
 
   async function handleSave() {
-    const memberId = users.find(u => u.id === editTarget)?.member_id;
-    if (!memberId) {
-      setMsg("該用戶尚未創建會員記錄，無法編輯");
-      return;
-    }
+    setSaving(true);
     try {
-      const res = await fetch(`/v1/admin/members/${memberId}`, {
+      const res = await fetch(`${API}/${editTarget}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify(editForm),
@@ -67,21 +193,15 @@ export default function MemberManagementPage() {
       fetchData();
     } catch (e) {
       setMsg(e.message);
+    } finally {
+      setSaving(false);
     }
   }
 
-  async function handleDelete(userId) {
-    const user = users.find(u => u.id === userId);
-    const memberId = user?.member_id;
-    let deleteUrl;
-    if (memberId) {
-      deleteUrl = `/v1/admin/members/${memberId}`;
-    } else {
-      deleteUrl = `/v1/admin/members/applications/${userId}`;
-    }
-    if (!confirm("確定刪除該用戶？")) return;
+  async function handleDelete(memberId) {
+    if (!confirm("確定刪除該會員？此操作不可撤銷。")) return;
     try {
-      const res = await fetch(deleteUrl, { method: "DELETE", headers: authHeaders });
+      const res = await fetch(`${API}/${memberId}`, { method: "DELETE", headers: authHeaders });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
         throw new Error(d.detail || "刪除失敗");
@@ -93,175 +213,216 @@ export default function MemberManagementPage() {
     }
   }
 
-  const STATUS_ORDER = [
-    "已入會",
-    "縈審通過",
-    "縈審不通過",
-    "縈審通過",
-    "縈審不通過",
-    "已入會",
-    "已入會",
-    "已入會",
-    ];
-
-  
-
-  const STATUS_LABEL = {
-    "已入會": "已入會",
-    "縈審通過": "縈審通過",
-    "縈審不通過": "縈審不通過",
-  };
-const sortedUsers = [...users].sort((a, b) => {
-    const ai = STATUS_ORDER.indexOf(a.status);
-    const bi = STATUS_ORDER.indexOf(b.status);
-    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-  });
-
-  const totalUsers = users.length;
-
-  const truncate = (s, n) => s && s.length > n ? s.slice(0, n) + "..." : s || "-";
-
-  function parseFiles(raw) {
-    if (!raw) return [];
-    try { return JSON.parse(raw); } catch { return [raw]; }
-  }
-
-  const BACKEND = "http://localhost:8000";
-
-  function statusBadge(status) {
-    const col = {
-      "待審核": "text-[#8b6914] bg-[#fef9e7]", "待審覈": "text-[#8b6914] bg-[#fef9e7]",
-      "初審通過": "text-[#0d7d4a] bg-[#eafaf1]", "初審通過": "text-[#0d7d4a] bg-[#eafaf1]",
-      "初審不通過": "text-[#c0392b] bg-[#fdedec]", "初審不通過": "text-[#c0392b] bg-[#fdedec]",
-      "終審通過": "text-[#1a6fb5] bg-[#e8f4fd]", "終審通過": "text-[#1a6fb5] bg-[#e8f4fd]",
-      "終審不通過": "text-[#c0392b] bg-[#fdedec]", "終審不通過": "text-[#c0392b] bg-[#fdedec]",
-      "待繳費": "text-[#b7950b] bg-[#fef9e7]",
-      "已繳費": "text-[#7d3c98] bg-[#f4ecf7]",
-      "已入會": "text-[#0d7d4a] bg-[#eafaf1]",
-    };
-    const cls = col[status] || "text-[#6a7679] bg-[#f0f3f3]";
-    return <span className={`inline-block rounded-[4px] px-2 py-0.5 text-[12px] font-bold ${cls}`}>{status}</span>;
-  }
-
-  function formatDate(iso) {
-    if (!iso) return "-";
-    const d = new Date(iso);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-  }
-
   return (
-    <div className="min-h-screen bg-[#f5f0eb]">
-      <div className="w-full mx-0 px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-[24px] font-bold text-[#142528]">會員管理</h1>
-            <p className="text-[14px] text-[#6a7679] mt-1">
-              共 <b className="text-[#142528]">{totalUsers}</b> 名用戶，來自 applications 表
-            </p>
-          </div>
+    <main className="min-h-screen bg-[#f8fbf9] pl-[240px] text-[#004f46]">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-[#dbe6e4] bg-white px-8 py-5">
+        <div>
+          <h1 className="text-[24px] font-bold">會員管理</h1>
+          <p className="mt-0.5 text-[13px] text-[#8ba09c]">查看與管理所有已入會會員</p>
+        </div>
+        <span className="rounded-full bg-[#e7f5f0] px-4 py-1.5 text-[13px] font-semibold text-[#006252]">
+          共 {members.length} 位會員
+        </span>
+      </div>
+
+      {/* Message */}
+      {msg && (
+        <div className="mx-8 mt-4 rounded-[10px] bg-[#e7f5f0] px-4 py-3 text-[13px] font-medium text-[#006252] flex items-center justify-between">
+          {msg}
+          <button className="text-[#00836f] underline text-[12px]" onClick={() => setMsg("")}>關閉</button>
+        </div>
+      )}
+
+      <div className="px-8 py-6">
+        {/* Tabs */}
+        <div className="flex items-center gap-1 mb-5">
+          {TABS.map(tab => (
+            <button
+              key={tab}
+              onClick={() => { setActiveTab(tab); setExpandedId(null); }}
+              className={`relative px-5 py-2.5 rounded-[8px] text-[14px] font-semibold transition ${
+                activeTab === tab
+                  ? "bg-[#e7f5f0] text-[#006252]"
+                  : "text-[#6a7679] hover:bg-[#f4f7f6]"
+              }`}
+            >
+              {tab}
+              <span className={`ml-2 text-[12px] ${activeTab === tab ? "text-[#006252]" : "text-[#bcc7c5]"}`}>
+                {tierCounts[tab]}
+              </span>
+            </button>
+          ))}
         </div>
 
-        {msg && (
-          <div className="mb-4 rounded-[8px] bg-[#e8f4fd] px-4 py-3 text-[14px] text-[#1a6fb5] flex justify-between items-center">
-            <span>{msg}</span>
-            <button onClick={() => setMsg("")} className="text-[20px]">×</button>
-          </div>
-        )}
+        {/* Search */}
+        <div className="mb-4">
+          <input
+            className="w-full max-w-[360px] rounded-[8px] border border-[#dce6e4] bg-white px-4 py-2.5 text-[14px] outline-none transition focus:border-[#00836f] focus:ring-1 focus:ring-[#00836f]/20"
+            placeholder="搜索姓名 / 用户名 / 手机号"
+            value={search}
+            onChange={e => { setSearch(e.target.value); setExpandedId(null); }}
+          />
+        </div>
 
+        {/* Table */}
         {loading ? (
-          <p className="text-center text-[#9ba8aa] py-10">加載中...</p>
-        ) : sortedUsers.length === 0 ? (
-          <p className="text-center text-[#9ba8aa] py-10">暫無數據</p>
+          <div className="flex items-center justify-center py-20 text-[#8ba09c]">加載中...</div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="text-[48px] mb-3">📭</div>
+            <p className="text-[16px] font-medium text-[#6c777b]">暫無會員數據</p>
+          </div>
         ) : (
-          <div className="rounded-[10px] border border-[#dde7e5] bg-white overflow-hidden">
-            <table className="w-full text-[14px] table-fixed">
+          <div className="overflow-hidden rounded-[12px] border border-[#dce6e4] bg-white">
+            <table className="w-full">
               <thead>
-                <tr className="bg-[#f5f7f6] text-[#4a5c5e] text-[12px] font-semibold">
-                  <th className="px-4 py-3 text-left w-[240px]">用戶名</th>
-                  <th className="px-4 py-3 text-left w-[90px]">姓名</th>
-                  <th className="pl-4 pr-4 py-3 text-left w-[150px]">身份證號</th>
-                  <th className="pl-4 pr-4 py-3 text-left w-[150px]">手機</th>
-                  <th className="px-4 py-3 text-left">等級</th>
-                  <th className="px-4 py-3 text-left">狀態</th>
-                  <th className="px-4 py-3 text-left">提交時間</th>
-                  <th className="px-4 py-3 text-left">繳費憑證</th>
-                  <th className="px-4 py-3 text-left">從業經歷</th>
-                  <th className="px-4 py-3 text-left">資質</th>
-                  <th className="px-4 py-3 text-left">資質文件</th>
-                  <th className="px-4 py-3 text-center w-[110px]">操作</th>
+                <tr className="border-b border-[#eef3f1] bg-[#f9fbfa] text-left">
+                  <th className="w-10 px-4 py-3"></th>
+                  <th className="px-4 py-3 text-[13px] font-semibold text-[#57696d]">姓名</th>
+                  <th className="px-4 py-3 text-[13px] font-semibold text-[#57696d]">用戶名</th>
+                  <th className="px-4 py-3 text-[13px] font-semibold text-[#57696d]">等級</th>
+                  <th className="px-4 py-3 text-[13px] font-semibold text-[#57696d]">類型</th>
+                  <th className="px-4 py-3 text-[13px] font-semibold text-[#57696d]">手機</th>
+                  <th className="px-4 py-3 text-[13px] font-semibold text-[#57696d]">年費</th>
+                  <th className="px-4 py-3 text-[13px] font-semibold text-[#57696d]">狀態</th>
+                  <th className="px-4 py-3 text-[13px] font-semibold text-[#57696d] text-center">操作</th>
                 </tr>
               </thead>
               <tbody>
-                {sortedUsers.map(u => {
-                  const files = parseFiles(u.qualification_files);
+                {filtered.map(member => {
+                  const isOpen = expandedId === member.id;
+                  const isEnterprise = member.member_type === "enterprise" || member.tier === "企業會員" || member.tier === "高級會員";
                   return (
-                    <tr key={u.id} className="border-t border-[#eef3f1] hover:bg-[#fafbfb]">
-                      <td className="px-4 py-3 font-medium text-[#142528] w-[240px]"><span className="block truncate max-w-[220px]" title={u.username}>{u.username}</span></td>
-                      <td className="px-4 py-3 whitespace-nowrap">{truncate(u.applicant_name, 8)}</td>
-                      <td className="px-4 py-3 text-[12px] text-[#6a7679] w-[150px]">{u.id_number || "-"}</td>
-                      <td className="px-4 py-3 text-[12px] text-[#6a7679] w-[150px]">{u.applicant_phone || "-"}</td>
-                      <td className="px-4 py-3">{u.requested_tier || "-"}</td>
-                      <td className="px-4 py-3">{statusBadge(u.status)}</td>
-                      <td className="px-4 py-3 text-[12px] text-[#6a7679]">{formatDate(u.submitted_at)}</td>
-                      <td className="px-4 py-3">
-                        {u.payment_proof_url ? (
-                          <a href={BACKEND + u.payment_proof_url} target="_blank" rel="noreferrer" className="text-[#006252] underline text-[12px]">查看</a>
-                        ) : (
-                          <span className="text-[#9ba8aa]">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-[12px] text-[#6a7679]">{truncate(u.career_history, 15)}</td>
-                      <td className="px-4 py-3 text-[12px] text-[#6a7679]">{truncate(u.qualifications, 15)}</td>
-                      <td className="px-4 py-3">
-                        {files.length > 0 ? files.map((f, i) => (
-                          <a key={i} href={BACKEND + f} target="_blank" rel="noreferrer" className="block text-[#006252] underline text-[12px]">文件{i+1}</a>
-                        )) : <span className="text-[#9ba8aa]">-</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-center gap-3">
-                          <button onClick={() => openEdit(u)} className="text-[#006252] text-[13px] font-semibold hover:underline">編輯</button>
-                          <button onClick={() => handleDelete(u.id)} className="text-[#c53030] text-[13px] font-semibold hover:underline">刪除</button>
-                        </div>
-                      </td>
-                    </tr>
+                    <React.Fragment key={member.id}>
+                      <tr
+                        className={`border-b border-[#f4f7f6] cursor-pointer transition hover:bg-[#f9fbfa] ${isOpen ? "bg-[#f4f8f7]" : ""}`}
+                        onClick={() => setExpandedId(isOpen ? null : member.id)}
+                      >
+                        <td className="px-4 py-3.5">
+                          <ChevronIcon open={isOpen} />
+                        </td>
+                        <td className="px-4 py-3.5 text-[14px] font-semibold text-[#142528]">{member.real_name || "-"}</td>
+                        <td className="px-4 py-3.5 text-[13px] text-[#57696d]">{member.username || "-"}</td>
+                        <td className="px-4 py-3.5">{tierBadge(member.tier)}</td>
+                        <td className="px-4 py-3.5 text-[13px] text-[#57696d]">{typeLabel(member.member_type)}</td>
+                        <td className="px-4 py-3.5 text-[13px] text-[#57696d]">{maskPhone(member.phone)}</td>
+                        <td className="px-4 py-3.5 text-[13px] font-medium text-[#27383a]">{member.annual_fee ? `MOP ${member.annual_fee.toLocaleString()}` : "-"}</td>
+                        <td className="px-4 py-3.5">{statusDot(member.is_active)}</td>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center justify-center gap-3" onClick={e => e.stopPropagation()}>
+                            <button onClick={() => openEdit(member)} className="text-[#006252] text-[13px] font-semibold hover:underline">編輯</button>
+                            <button onClick={() => handleDelete(member.id)} className="text-[#c53030] text-[13px] font-semibold hover:underline">刪除</button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Expanded detail */}
+                      {isOpen && (
+                        <tr>
+                          <td colSpan={9} className="bg-[#f9fbfa] border-b border-[#eef3f1]">
+                            <div className="px-8 py-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                              {FIELD_GROUPS.map(group => {
+                                if (group.enterpriseOnly && !isEnterprise) return null;
+                                return (
+                                  <div key={group.title} className={group.enterpriseOnly ? "md:col-span-2" : ""}>
+                                    <h4 className="text-[12px] font-bold text-[#8ba09c] uppercase tracking-wider mb-3">{group.title}</h4>
+                                    <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
+                                      {group.fields.map(f => {
+                                        const value = f.render ? f.render(member[f.key], member) : (member[f.key] ?? "-");
+                                        return (
+                                          <div key={f.key} className="flex items-baseline gap-2">
+                                            <span className="text-[12px] text-[#8ba09c] shrink-0">{f.label}</span>
+                                            <span className="text-[13px] font-medium text-[#27383a]">{value}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
             </table>
           </div>
         )}
+      </div>
 
-        {editTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setEditTarget(null)}>
-            <div className="w-full max-w-[600px] max-h-[85vh] overflow-y-auto rounded-[12px] border border-[#dde7e5] bg-white p-6 shadow-[0_20px_50px_rgba(35,70,74,0.25)]" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-[18px] font-bold text-[#142528]">編輯會員</h2>
-                <button onClick={() => setEditTarget(null)} className="text-[20px] text-[#9ba8aa]">×</button>
+      {/* Edit Modal */}
+      {editTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setEditTarget(null)}>
+          <div className="w-full max-w-[600px] max-h-[85vh] overflow-y-auto rounded-[14px] border border-[#dde7e5] bg-white shadow-[0_20px_50px_rgba(35,70,74,0.25)]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[#eef3f1]">
+              <h2 className="text-[18px] font-bold text-[#142528]">編輯會員</h2>
+              <button onClick={() => setEditTarget(null)} className="text-[22px] text-[#9ba8aa] hover:text-[#142528]">×</button>
+            </div>
+            <div className="p-6 space-y-4">
+              <Field label="姓名" value={editForm.real_name} onChange={v => updateField("real_name", v)} />
+              <Field label="手機" value={editForm.phone} onChange={v => updateField("phone", v)} />
+              <div>
+                <label className="block mb-1 text-[13px] font-semibold text-[#27383a]">等級</label>
+                <select
+                  className="w-full rounded-[7px] border border-[#cfd9d7] bg-white px-3 py-2.5 text-[14px] text-[#1b292b] focus:outline-none focus:ring-2 focus:ring-[#006252]/30"
+                  value={editForm.tier}
+                  onChange={e => updateField("tier", e.target.value)}
+                >
+                  <option value="個人會員">個人會員</option>
+                  <option value="企業會員">企業會員</option>
+                  <option value="高級會員">高級會員</option>
+                  <option value="理事">理事</option>
+                </select>
               </div>
-              <div className="space-y-3">
-                <Field label={"用戶名"} value={editForm.username} onChange={v => updateField("username", v)} />
-                <Field label={"姓名"} value={editForm.real_name} onChange={v => updateField("real_name", v)} />
-                <Field label={"手機"} value={editForm.phone} onChange={v => updateField("phone", v)} />
-                <Field label={"等級"} value={editForm.tier} onChange={v => updateField("tier", v)} />
-                <div>
-                  <label className="block mb-1 text-[13px] font-semibold text-[#27383a]">從業經歷</label>
-                  <textarea className="w-full rounded-[6px] border border-[#cfd9d7] bg-white px-3 py-2 text-[14px] h-20 resize-none" value={editForm.career_history} onChange={e => updateField("career_history", e.target.value)} />
-                </div>
-                <div>
-                  <label className="block mb-1 text-[13px] font-semibold text-[#27383a]">資質</label>
-                  <textarea className="w-full rounded-[6px] border border-[#cfd9d7] bg-white px-3 py-2 text-[14px] h-20 resize-none" value={editForm.qualifications} onChange={e => updateField("qualifications", e.target.value)} />
-                </div>
-                <Field label={"資質文件"} value={editForm.qualification_files} onChange={v => updateField("qualification_files", v)} />
+              <Field label="年費" value={String(editForm.annual_fee)} onChange={v => updateField("annual_fee", parseInt(v) || 0)} type="number" />
+              <div>
+                <label className="block mb-1 text-[13px] font-semibold text-[#27383a]">類型</label>
+                <select
+                  className="w-full rounded-[7px] border border-[#cfd9d7] bg-white px-3 py-2.5 text-[14px] text-[#1b292b] focus:outline-none focus:ring-2 focus:ring-[#006252]/30"
+                  value={editForm.member_type || ""}
+                  onChange={e => updateField("member_type", e.target.value)}
+                >
+                  <option value="individual">個人會員</option>
+                  <option value="enterprise">企業 / 機構</option>
+                </select>
               </div>
-              <div className="flex gap-3 justify-end mt-5 pt-3 border-t border-[#eef3f1]">
-                <button onClick={() => setEditTarget(null)} className="rounded-[6px] border border-[#cfd9d7] px-5 py-2 text-[14px] text-[#6a7679]">取消</button>
-                <button onClick={handleSave} className="rounded-[6px] bg-gradient-to-br from-[#00836f] to-[#006252] px-5 py-2 text-[14px] font-bold text-white">保存</button>
+              <div className="flex items-center gap-3">
+                <label className="text-[13px] font-semibold text-[#27383a]">在籍狀態</label>
+                <input type="checkbox" checked={editForm.is_active} onChange={e => updateField("is_active", e.target.checked)} className="h-4 w-4 rounded accent-[#006252]" />
+              </div>
+
+              {/* Enterprise fields */}
+              <div className="border-t border-[#eef3f1] pt-4">
+                <p className="text-[12px] font-bold text-[#8ba09c] uppercase tracking-wider mb-3">機構專屬</p>
+                <div className="space-y-3">
+                  <Field label="公司名稱" value={editForm.company_name} onChange={v => updateField("company_name", v)} />
+                  <Field label="商業登記號" value={editForm.business_reg_no} onChange={v => updateField("business_reg_no", v)} />
+                  <Field label="品牌簡介" value={editForm.brand_description} onChange={v => updateField("brand_description", v)} />
+                  <div className="flex items-center gap-3">
+                    <label className="text-[13px] font-semibold text-[#27383a]">精選展示</label>
+                    <input type="checkbox" checked={editForm.is_featured} onChange={e => updateField("is_featured", e.target.checked)} className="h-4 w-4 rounded accent-[#006252]" />
+                  </div>
+                </div>
               </div>
             </div>
+            <div className="flex justify-end gap-3 px-6 pb-6 pt-2">
+              <button onClick={() => setEditTarget(null)} className="rounded-[7px] border border-[#cfd9d7] px-5 py-2.5 text-[14px] text-[#6a7679] hover:bg-[#f4f7f6]">取消</button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="rounded-[7px] bg-gradient-to-br from-[#00836f] to-[#006252] px-6 py-2.5 text-[14px] font-bold text-white shadow-md disabled:opacity-60"
+              >
+                {saving ? "保存中..." : "保存"}
+              </button>
+            </div>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </main>
   );
 }
 
@@ -271,7 +432,7 @@ function Field({ label, value, onChange, type = "text" }) {
       <label className="block mb-1 text-[13px] font-semibold text-[#27383a]">{label}</label>
       <input
         type={type}
-        className="w-full rounded-[6px] border border-[#cfd9d7] bg-white px-3 py-2 text-[14px] text-[#1b292b] focus:outline-none focus:ring-2 focus:ring-[#006252]/30"
+        className="w-full rounded-[7px] border border-[#cfd9d7] bg-white px-3 py-2.5 text-[14px] text-[#1b292b] focus:outline-none focus:ring-2 focus:ring-[#006252]/30"
         value={value || ""}
         onChange={e => onChange(e.target.value)}
       />

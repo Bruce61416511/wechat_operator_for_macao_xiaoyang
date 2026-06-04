@@ -19,7 +19,7 @@ class Member(Base):
     wechat_openid: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False, default="")
     tier: Mapped[str] = mapped_column(String(30), default="個人會員", nullable=False)
-    member_type: Mapped[str] = mapped_column(String(20), default="????", nullable=False)
+    member_type: Mapped[str] = mapped_column(String(20), default="individual", nullable=False)
     annual_fee: Mapped[int] = mapped_column(default=0, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
