@@ -238,6 +238,38 @@ async def resubmit_application(app_id: str, body: ResubmitRequest, db: AsyncSess
     return {"application_id": str(new_app.id), "status": new_app.status}
 
 
+
+
+class ApplicationUpdate(BaseModel):
+    applicant_name: str | None = None
+    applicant_phone: str | None = None
+    applicant_address: str | None = None
+    career_history: str | None = None
+    qualifications: str | None = None
+    qualification_files: str | None = None
+    requested_tier: str | None = None
+    member_type: str | None = None
+    company_name: str | None = None
+    business_reg_no: str | None = None
+    status: str | None = None
+
+
+@router.put("/{app_id}", response_model=dict)
+async def update_application(app_id: str, body: ApplicationUpdate, db: AsyncSession = Depends(get_db)):
+    """??????"""
+    svc = ApplicationService(db)
+    app = await svc.update_application(app_id, body.model_dump(exclude_none=True))
+    return {"application_id": str(app.id), "status": app.status}
+
+
+@router.delete("/{app_id}", response_model=dict)
+async def delete_application(app_id: str, db: AsyncSession = Depends(get_db)):
+    """??????"""
+    svc = ApplicationService(db)
+    await svc.delete_application(app_id)
+    return {"detail": "deleted"}
+
+
 @router.get("/{app_id}/rejection-reason", response_model=dict)
 async def get_rejection_reason(app_id: str, db: AsyncSession = Depends(get_db)):
     app_svc = ApplicationService(db)

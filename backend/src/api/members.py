@@ -428,6 +428,7 @@ async def admin_list_applications(
     db: AsyncSession = Depends(get_db)
 ):
     svc = ApplicationService(db)
+    await svc.auto_expire_payments()
     result = await svc.list_applications(status=status, page=page, page_size=page_size)
     items = []
     for app in result.get("items", []):
@@ -464,6 +465,19 @@ async def admin_list_applications(
             "business_reg_no": app.get("business_reg_no", ""),
         })
     return {"items": items, "total": len(items), "page": page}
+
+
+
+@router_admin.post("/debug-run-payment-expiry", response_model=dict)
+async def debug_run_payment_expiry(
+    user: dict = Depends(require_role("root")),
+    db: AsyncSession = Depends(get_db)
+):
+    """????????????????????"""
+    svc = ApplicationService(db)
+    count = await svc.auto_expire_payments()
+    return {"expired_count": count}
+
 
 @router_admin.get("/applications-summary", response_model=dict)
 async def admin_applications_summary(

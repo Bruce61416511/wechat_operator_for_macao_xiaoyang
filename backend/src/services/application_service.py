@@ -22,6 +22,7 @@ class ApplicationService:
         "已繳費": ["已入會", "待繳費"],
         "初審不通過": ["待審核"],
         "終審不通過": ["待審核"],
+        "已過期": ["待審核"],
     }
 
     RESUBMIT_COOLDOWN = {"初審不通過": timedelta(0), "終審不通過": timedelta(days=30)}
@@ -170,10 +171,51 @@ class ApplicationService:
         await self.db.flush()
         return new_app
 
+
+    async def auto_expire_payments(self) -> int:
+        """??????????????????"""
+        from sqlalchemy import update
+        now = datetime.now(timezone.utc)
+        result = await self.db.execute(
+            select(Application).where(
+                Application.status == "待繳費",
+                Application.payment_due_date.isnot(None),
+                Application.payment_due_date < now
+            )
+        )
+        expired = result.scalars().all()
+        for app in expired:
+            app.status = "已過期"
+        if expired:
+            await self.db.flush()
+        return len(expired)
+
     async def get_rejection_reason(self, app_id: uuid.UUID) -> dict:
         app = await self.get_application(app_id)
         reason = app.screening_result or app.final_review_result or "無"
         return {"application_id": str(app.id), "status": app.status, "reason": reason, "updated_at": app.updated_at.isoformat() if app.updated_at else None}
+
+
+    async def update_application(self, app_id: str, data: dict) -> Application:
+        """???????????"""
+        app = await self.get_application(uuid.UUID(app_id))
+        # Only allow editing certain fields
+        editable = [
+            "applicant_name", "applicant_phone", "applicant_address",
+            "career_history", "qualifications", "qualification_files",
+            "requested_tier", "member_type", "company_name", "business_reg_no", "status"
+        ]
+        for field in editable:
+            if field in data and data[field] is not None:
+                setattr(app, field, data[field])
+        await self.db.flush()
+        return app
+
+    async def delete_application(self, app_id: str) -> None:
+        """??????"""
+        app = await self.get_application(uuid.UUID(app_id))
+        await self.db.delete(app)
+        await self.db.flush()
 
     def _to_dict(self, app: Application) -> dict:
         return {

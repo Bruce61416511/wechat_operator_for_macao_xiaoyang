@@ -22,6 +22,7 @@ const APP_TABS = [
   { key: "終審不通過", label: "終審不通過" },
   { key: "待繳費",     label: "待繳費" },
   { key: "已繳費",     label: "已繳費" },
+  { key: "已過期",   label: "已過期" },
 ];
 
 function tierBadge(tier) {
@@ -43,6 +44,7 @@ function statusBadge(status) {
     "終審不通過": "bg-[#fdedec] text-[#c0392b]",
     "待繳費":     "bg-[#fef9e7] text-[#b7950b]",
     "已繳費":     "bg-[#f4ecf7] text-[#7b2d98]",
+    "已過期":   "bg-[#f0f3f3] text-[#9ba8aa]",
   };
   const cls = map[status] || "bg-[#f0f3f3] text-[#6a7679]";
   return <span className={`inline-block rounded-[4px] px-2 py-0.5 text-[12px] font-bold ${cls}`}>{status}</span>;
@@ -605,6 +607,7 @@ export default function MemberManagementPage() {
                   <option value="終審不通過">終審不通過</option>
                   <option value="待繳費">待繳費</option>
                   <option value="已繳費">已繳費</option>
+                  <option value="已過期">已過期</option>
                 </select>
               </div>
               {(editForm.requested_tier === "企業會員" || editForm.requested_tier === "高級會員") && (
