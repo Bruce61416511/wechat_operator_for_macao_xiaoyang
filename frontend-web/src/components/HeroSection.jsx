@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import PublicBenefitsModal from "./PublicBenefitsModal.jsx";
 import ResetPasswordModal from "./ResetPasswordModal.jsx";
@@ -182,9 +182,6 @@ export default function HeroSection() {
           <div className="w-full pb-2 text-center xl:ml-[26px] xl:pb-0 xl:text-left">
             <p className="font-serifCn text-[34px] leading-[1.08] tracking-normal xl:text-[32px]"><span className="font-bold">小揚同學</span> - 澳門直播協會</p>
             <p className="mt-3 font-serifCn text-[34px] leading-[1.08] tracking-normal xl:text-[32px]">時刻在線，爲您效勞</p>
-            <p className="mt-7 text-[20px] font-semibold leading-none tracking-normal text-[#005d50] xl:text-[20px]">
-              入會指導 ｜ 申請協助 ｜ 進度查詢 ｜ 活動報名
-            </p>
 
             <div className="mt-[26px] grid grid-cols-2 justify-items-center gap-4 sm:flex xl:gap-[14px]">
               {quickActions.map((action) => {

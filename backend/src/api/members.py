@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
@@ -346,6 +346,35 @@ async def admin_delete_application(
     await db.delete(app)
     await db.flush()
     return {"id": app_id, "status": "\u5df2\u5220\u9664"}
+
+class ApplicationAdminUpdate(BaseModel):
+    applicant_name: str | None = None
+    applicant_phone: str | None = None
+    applicant_address: str | None = None
+    career_history: str | None = None
+    qualifications: str | None = None
+    qualification_files: str | None = None
+    requested_tier: str | None = None
+    company_name: str | None = None
+    business_reg_no: str | None = None
+    status: str | None = None
+
+@router_admin.patch("/applications/{app_id}", response_model=dict)
+async def admin_update_application(
+    app_id: str,
+    body: ApplicationAdminUpdate,
+    user: dict = Depends(require_role("root")),
+    db: AsyncSession = Depends(get_db)
+):
+    app_svc = ApplicationService(db)
+    app = await app_svc.get_application(uuid.UUID(app_id))
+    if not app:
+        raise HTTPException(status_code=404, detail="申請不存在")
+    data = body.model_dump(exclude_none=True)
+    for k, v in data.items():
+        setattr(app, k, v)
+    await db.flush()
+    return {"id": str(app.id), "status": app.status}
 
 @router_admin.get("/applications", response_model=dict)
 async def admin_list_applications(

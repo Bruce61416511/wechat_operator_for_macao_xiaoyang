@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getMyProfile } from "../services/api.js";
 import UpdateProfileModal from "./UpdateProfileModal.jsx";
 import ProfileViewModal from "./ProfileViewModal.jsx";
@@ -9,6 +9,7 @@ import NotificationModal from "./NotificationModal.jsx"
 import ResourceManagementPanel from "./ResourceManagementPanel.jsx"
 const sidebarItems = [
   { label: '會員中心', active: true, icon: HomeIcon },
+  { label: '公告管理', icon: BellIcon, adminOnly: true },
   { label: '資料中心', icon: FolderIcon },
   { label: '我的權益', icon: ShieldIcon },
   { label: '協會活動', icon: CalendarIcon },
@@ -17,7 +18,6 @@ const sidebarItems = [
   { label: '繳費審批', icon: CardIcon, adminOnly: true },
   { label: '會員管理', icon: UsersIcon, adminOnly: true },
   { label: '章程管理', icon: BookmarkIcon, adminOnly: true },
-  { label: '公告管理', icon: BellIcon, adminOnly: true },
 ];
 
 const actions = [  { label: '續費', icon: CardIcon },  ({ label: '更新資料', icon: IdIcon }),

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 const MEMBERS_API = "/v1/admin/members";
 const APPS_API = "/v1/admin/members/applications";
@@ -191,6 +191,7 @@ export default function MemberManagementPage() {
   const [editTarget, setEditTarget] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [appEditTarget, setAppEditTarget] = useState(null);
 
   const token = sessionStorage.getItem("token");
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
@@ -262,7 +263,8 @@ export default function MemberManagementPage() {
   function openEdit(member) {
     setEditTarget(member.id);
     setEditForm({
-      real_name: member.real_name || "", phone: member.phone || "",
+      real_name: member.real_name || "", username: member.username || "", phone: member.phone || "",
+      address: member.address || "", career_history: member.career_history || "", qualifications: member.qualifications || "",
       tier: member.tier || "", annual_fee: member.annual_fee || 0,
       is_active: member.is_active, member_type: member.member_type || "",
       company_name: member.company_name || "", business_reg_no: member.business_reg_no || "",
@@ -291,6 +293,37 @@ export default function MemberManagementPage() {
     } catch(e) { setMsg(e.message); }
   }
 
+
+  // App edit
+  function openAppEdit(app) {
+    setAppEditTarget(app.id);
+    setEditForm({
+      applicant_name: app.applicant_name || "", applicant_phone: app.applicant_phone || "",
+      applicant_address: app.applicant_address || "", career_history: app.career_history || "",
+      qualifications: app.qualifications || "", requested_tier: app.requested_tier || "",
+      company_name: app.company_name || "", business_reg_no: app.business_reg_no || "",
+      status: app.status || "",
+    });
+  }
+  async function handleAppSave() {
+    setSaving(true);
+    try {
+      const res = await fetch(`${APPS_API}/${appEditTarget}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify(editForm),
+      });
+      if (!res.ok) { const d = await res.json().catch(()=>({})); throw new Error(d.detail || "保存失敗"); }
+      setMsg("保存成功"); setAppEditTarget(null); fetchData();
+    } catch(e) { setMsg(e.message); } finally { setSaving(false); }
+  }
+  async function handleAppDelete(appId) {
+    if (!confirm("確定刪除該申請？此操作不可撤銷。")) return;
+    try {
+      const res = await fetch(`${APPS_API}/${appId}`, { method: "DELETE", headers: authHeaders });
+      if (!res.ok) { const d = await res.json().catch(()=>({})); throw new Error(d.detail || "刪除失敗"); }
+      setMsg("已刪除"); fetchData();
+    } catch(e) { setMsg(e.message); }
+  }
   const displayData = isAppTab ? appFiltered : memberFiltered;
 
   return (
@@ -413,7 +446,10 @@ export default function MemberManagementPage() {
                               </>
                             )}
                             {isAppTab && (
-                              <span className="text-[#bcc7c5] text-[12px]">—</span>
+                              <>
+                                <button onClick={() => openAppEdit(item)} className="text-[#006252] text-[13px] font-semibold hover:underline">編輯</button>
+                                <button onClick={() => handleAppDelete(item.id)} className="text-[#c53030] text-[13px] font-semibold hover:underline">刪除</button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -467,6 +503,7 @@ export default function MemberManagementPage() {
             <div className="p-6 space-y-4">
               <Field label="姓名" value={editForm.real_name} onChange={v => updateField("real_name", v)} />
               <Field label="手機" value={editForm.phone} onChange={v => updateField("phone", v)} />
+              <Field label="郵箱地址" value={editForm.username} onChange={v => updateField("username", v)} />
               <div>
                 <label className="block mb-1 text-[13px] font-semibold text-[#27383a]">等級</label>
                 <select className="w-full rounded-[7px] border border-[#cfd9d7] bg-white px-3 py-2.5 text-[14px] text-[#1b292b] focus:outline-none focus:ring-2 focus:ring-[#006252]/30" value={editForm.tier} onChange={e => updateField("tier", e.target.value)}>
@@ -488,6 +525,8 @@ export default function MemberManagementPage() {
                 <label className="text-[13px] font-semibold text-[#27383a]">在籍狀態</label>
                 <input type="checkbox" checked={editForm.is_active} onChange={e => updateField("is_active", e.target.checked)} className="h-4 w-4 rounded accent-[#006252]" />
               </div>
+              <Field label="地址" value={editForm.address} onChange={v => updateField("address", v)} />
+              {(editForm.member_type === "enterprise" || editForm.tier === "企業會員" || editForm.tier === "高級會員") && (
               <div className="border-t border-[#eef3f1] pt-4">
                 <p className="text-[12px] font-bold text-[#8ba09c] uppercase tracking-wider mb-3">機構專屬</p>
                 <div className="space-y-3">
@@ -500,10 +539,86 @@ export default function MemberManagementPage() {
                   </div>
                 </div>
               </div>
-            </div>
+              )}
+              <div className="border-t border-[#eef3f1] pt-4">
+                <p className="text-[12px] font-bold text-[#8ba09c] uppercase tracking-wider mb-3">從業 & 資質</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block mb-1 text-[13px] font-semibold text-[#27383a]">從業經歷</label>
+                    <textarea className="w-full rounded-[7px] border border-[#cfd9d7] bg-white px-3 py-2 text-[14px] h-24 resize-none focus:outline-none focus:ring-2 focus:ring-[#006252]/30" value={editForm.career_history || ""} onChange={e => updateField("career_history", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-[13px] font-semibold text-[#27383a]">資質說明</label>
+                    <textarea className="w-full rounded-[7px] border border-[#cfd9d7] bg-white px-3 py-2 text-[14px] h-24 resize-none focus:outline-none focus:ring-2 focus:ring-[#006252]/30" value={editForm.qualifications || ""} onChange={e => updateField("qualifications", e.target.value)} />
+                  </div>
+                </div>
+              </div>
             <div className="flex justify-end gap-3 px-6 pb-6 pt-2">
               <button onClick={() => setEditTarget(null)} className="rounded-[7px] border border-[#cfd9d7] px-5 py-2.5 text-[14px] text-[#6a7679] hover:bg-[#f4f7f6]">取消</button>
               <button onClick={handleSave} disabled={saving} className="rounded-[7px] bg-gradient-to-br from-[#00836f] to-[#006252] px-6 py-2.5 text-[14px] font-bold text-white shadow-md disabled:opacity-60">{saving ? "保存中..." : "保存"}</button>
+            </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* App Edit Modal */}
+      {appEditTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setAppEditTarget(null)}>
+          <div className="w-full max-w-[600px] max-h-[85vh] overflow-y-auto rounded-[14px] border border-[#dde7e5] bg-white shadow-[0_20px_50px_rgba(35,70,74,0.25)]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[#eef3f1]">
+              <h2 className="text-[18px] font-bold text-[#142528]">編輯申請</h2>
+              <button onClick={() => setAppEditTarget(null)} className="text-[22px] text-[#9ba8aa] hover:text-[#142528]">×</button>
+            </div>
+            <div className="p-6 space-y-4">
+              <Field label="姓名" value={editForm.applicant_name} onChange={v => updateField("applicant_name", v)} />
+              <Field label="手機" value={editForm.applicant_phone} onChange={v => updateField("applicant_phone", v)} />
+              <Field label="地址" value={editForm.applicant_address} onChange={v => updateField("applicant_address", v)} />
+              <div>
+                <label className="block mb-1 text-[13px] font-semibold text-[#27383a]">申請等級</label>
+                <select className="w-full rounded-[7px] border border-[#cfd9d7] bg-white px-3 py-2.5 text-[14px] text-[#1b292b] focus:outline-none focus:ring-2 focus:ring-[#006252]/30" value={editForm.requested_tier || ""} onChange={e => updateField("requested_tier", e.target.value)}>
+                  <option value="個人會員">個人會員</option>
+                  <option value="企業會員">企業會員</option>
+                  <option value="高級會員">高級會員</option>
+                </select>
+              </div>
+              <div>
+                <label className="block mb-1 text-[13px] font-semibold text-[#27383a]">申請狀態</label>
+                <select className="w-full rounded-[7px] border border-[#cfd9d7] bg-white px-3 py-2.5 text-[14px] text-[#1b292b] focus:outline-none focus:ring-2 focus:ring-[#006252]/30" value={editForm.status || ""} onChange={e => updateField("status", e.target.value)}>
+                  <option value="初審通過">初審通過</option>
+                  <option value="初審不通過">初審不通過</option>
+                  <option value="終審通過">終審通過</option>
+                  <option value="終審不通過">終審不通過</option>
+                  <option value="待繳費">待繳費</option>
+                  <option value="已繳費">已繳費</option>
+                </select>
+              </div>
+              {(editForm.requested_tier === "企業會員" || editForm.requested_tier === "高級會員") && (
+              <div className="border-t border-[#eef3f1] pt-4">
+                <p className="text-[12px] font-bold text-[#8ba09c] uppercase tracking-wider mb-3">機構專屬</p>
+                <div className="space-y-3">
+                  <Field label="公司名稱" value={editForm.company_name} onChange={v => updateField("company_name", v)} />
+                  <Field label="商業登記號" value={editForm.business_reg_no} onChange={v => updateField("business_reg_no", v)} />
+                </div>
+              </div>
+              )}
+              <div className="border-t border-[#eef3f1] pt-4">
+                <p className="text-[12px] font-bold text-[#8ba09c] uppercase tracking-wider mb-3">從業 & 資質</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block mb-1 text-[13px] font-semibold text-[#27383a]">從業經歷</label>
+                    <textarea className="w-full rounded-[7px] border border-[#cfd9d7] bg-white px-3 py-2 text-[14px] h-24 resize-none focus:outline-none focus:ring-2 focus:ring-[#006252]/30" value={editForm.career_history || ""} onChange={e => updateField("career_history", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-[13px] font-semibold text-[#27383a]">資質說明</label>
+                    <textarea className="w-full rounded-[7px] border border-[#cfd9d7] bg-white px-3 py-2 text-[14px] h-24 resize-none focus:outline-none focus:ring-2 focus:ring-[#006252]/30" value={editForm.qualifications || ""} onChange={e => updateField("qualifications", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 px-6 pb-6 pt-2">
+              <button onClick={() => setAppEditTarget(null)} className="rounded-[7px] border border-[#cfd9d7] px-5 py-2.5 text-[14px] text-[#6a7679] hover:bg-[#f4f7f6]">取消</button>
+              <button onClick={handleAppSave} disabled={saving} className="rounded-[7px] bg-gradient-to-br from-[#00836f] to-[#006252] px-6 py-2.5 text-[14px] font-bold text-white shadow-md disabled:opacity-60">{saving ? "保存中..." : "保存"}</button>
             </div>
           </div>
         </div>
