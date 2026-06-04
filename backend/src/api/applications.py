@@ -22,7 +22,7 @@ UPLOAD_DIR = Path("uploads/payment")
 
 class ApplicationCreate(BaseModel):
     username: str = Field(min_length=6, max_length=50, pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
-    id_number: str = Field(min_length=15, max_length=18)
+    id_number: str | None = Field(default=None, min_length=15, max_length=18)
     applicant_name: str = Field(min_length=1, max_length=50)
     applicant_phone: str = Field(min_length=5, max_length=20)
     applicant_address: str | None = None
@@ -30,7 +30,10 @@ class ApplicationCreate(BaseModel):
     qualifications: str | None = None
     qualification_files: str | None = None
     password: str | None = None
+    member_type: str = 'individual'
     requested_tier: str | None = None
+    company_name: str | None = None
+    business_reg_no: str | None = None
 
 
 class ScreeningRequest(BaseModel):
@@ -51,7 +54,10 @@ class ResubmitRequest(BaseModel):
     qualifications: str | None = None
     qualification_files: str | None = None
     password: str | None = None
+    member_type: str | None = None
     requested_tier: str | None = None
+    company_name: str | None = None
+    business_reg_no: str | None = None
 
 
 

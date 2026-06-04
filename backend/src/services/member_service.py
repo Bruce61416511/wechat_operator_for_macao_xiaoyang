@@ -9,6 +9,13 @@ from ..models.member import Member
 
 logger = logging.getLogger(__name__)
 
+# Tier -> annual fee mapping
+TIER_FEE = {
+    "個人會員": 500,
+    "企業會員": 2000,
+    "高級會員": 5000,
+}
+
 
 class MemberService:
     """會員服務：查詢、更新、刪除、審計"""
@@ -25,7 +32,7 @@ class MemberService:
         return result.scalar_one_or_none()
 
     async def update_member(self, member: Member, data: dict) -> Member:
-        allowed_fields = {"phone", "real_name", "address", "career_history", "qualifications", "qualification_files"}
+        allowed_fields = {"phone", "real_name", "address", "career_history", "qualifications", "qualification_files", "member_type", "company_name", "business_reg_no"}
         for k, v in data.items():
             if k in allowed_fields and v is not None:
                 setattr(member, k, v)
@@ -35,7 +42,7 @@ class MemberService:
         return member
 
     async def update_by_staff(self, member: Member, data: dict) -> Member:
-        staff_fields = {"phone", "real_name", "tier", "annual_fee", "is_active"}
+        staff_fields = {"phone", "real_name", "tier", "annual_fee", "is_active", "member_type", "company_name", "business_reg_no", "company_logo_url", "brand_description", "is_featured", "featured_expires_at"}
         for k, v in data.items():
             if k in staff_fields and v is not None:
                 setattr(member, k, v)
@@ -44,10 +51,12 @@ class MemberService:
         await self.db.flush()
         return member
 
-    async def list_members(self, tier: str | None = None, status: str | None = None, page: int = 1, page_size: int = 20) -> dict:
+    async def list_members(self, tier: str | None = None, member_type: str | None = None, status: str | None = None, page: int = 1, page_size: int = 20) -> dict:
         query = select(Member).order_by(Member.created_at.desc())
         if tier:
             query = query.where(Member.tier == tier)
+        if member_type:
+            query = query.where(Member.member_type == member_type)
         if status:
             is_active = status == "在籍"
             query = query.where(Member.is_active == is_active)
@@ -114,8 +123,8 @@ class MemberService:
     async def export_csv(self) -> str:
         result = await self.db.execute(select(Member))
         members = result.scalars().all()
-        header = "ID,姓名,手機,等級,年費,狀態,入會日期\n"
-        rows = [f"{m.id},{m.real_name},{m.phone},{m.tier},{m.annual_fee},{'在籍' if m.is_active else '停用'},{m.created_at}" for m in members]
+        header = "ID,姓名,手機,等級,年費,類型,狀態,入會日期\n"
+        rows = [f"{m.id},{m.real_name},{m.phone},{m.tier},{m.annual_fee},{m.member_type},{'在籍' if m.is_active else '停用'},{m.created_at}" for m in members]
         return header + "\n".join(rows)
 
     async def create_info_update_application(self, member, data: dict) -> dict:
@@ -124,9 +133,14 @@ class MemberService:
 
         ts = str(int(datetime.now(timezone.utc).timestamp()))
         temp_username = member.username + "_upd_" + ts
-        temp_idnum = member.id_number + "_upd_" + ts
+        temp_idnum = (member.id_number or "") + "_upd_" + ts
         requested_tier = data.get("requested_tier", member.tier)
         tier_changed = requested_tier and requested_tier != member.tier
+
+        # Validate: premium tier only for enterprise members
+        member_type = data.get("member_type", member.member_type)
+        if requested_tier == "高級會員" and member_type != "enterprise":
+            return {"error": "premium_requires_enterprise", "message": "高級會員僅限企業會員升級"}
 
         app = Application(
             username=temp_username,
@@ -137,7 +151,10 @@ class MemberService:
             career_history=data.get("career_history", ""),
             qualifications=data.get("qualifications", ""),
             password_hash=member.password_hash,
+            member_type=member_type,
             requested_tier=requested_tier,
+            company_name=data.get("company_name", member.company_name),
+            business_reg_no=data.get("business_reg_no", member.business_reg_no),
             member_id=member.id,
             status="待審核"
         )
@@ -166,13 +183,16 @@ class MemberService:
             # no tier change: update member directly
             member.real_name = app.applicant_name
             member.phone = app.applicant_phone
+            member.member_type = member_type
+            member.company_name = app.company_name
+            member.business_reg_no = app.business_reg_no
             member.updated_at = datetime.now(timezone.utc)
             app.status = "終審通過"
             app.final_review_result = "信息變更-自動通過"
             await self.db.flush()
             app.status = "已入會"
             await self.db.flush()
-            self._audit_log("info_update", member.id, {"fields": ["real_name", "phone"]})
+            self._audit_log("info_update", member.id, {"fields": ["real_name", "phone", "member_type", "company_name"]})
             return {"application_id": str(app.id), "status": app.status, "message": "信息修改已生效"}
 
     def _to_admin_dict(self, m: Member) -> dict:
@@ -183,6 +203,7 @@ class MemberService:
             "real_name": m.real_name,
             "phone": m.phone,
             "tier": m.tier,
+            "member_type": m.member_type,
             "annual_fee": m.annual_fee,
             "is_active": m.is_active,
             "created_at": m.created_at.isoformat() if m.created_at else None,
@@ -191,6 +212,12 @@ class MemberService:
             "career_history": m.career_history,
             "qualifications": m.qualifications,
             "qualification_files": m.qualification_files,
+            "company_name": m.company_name,
+            "business_reg_no": m.business_reg_no,
+            "company_logo_url": m.company_logo_url,
+            "brand_description": m.brand_description,
+            "is_featured": m.is_featured,
+            "featured_expires_at": m.featured_expires_at.isoformat() if m.featured_expires_at else None,
         }
 
     def _audit_log(self, action: str, member_id, details: dict):
@@ -204,11 +231,18 @@ class MemberService:
             "real_name": m.real_name,
             "phone": m.phone[:7] + "****" if m.phone else None,
             "tier": m.tier,
+            "member_type": m.member_type,
             "annual_fee": m.annual_fee,
             "is_active": m.is_active,
             "created_at": m.created_at.isoformat() if m.created_at else None,
-              "address": m.address,
-              "career_history": m.career_history,
-              "qualifications": m.qualifications,
-              "qualification_files": m.qualification_files,
-          }
+            "address": m.address,
+            "career_history": m.career_history,
+            "qualifications": m.qualifications,
+            "qualification_files": m.qualification_files,
+            "company_name": m.company_name,
+            "business_reg_no": m.business_reg_no,
+            "company_logo_url": m.company_logo_url,
+            "brand_description": m.brand_description,
+            "is_featured": m.is_featured,
+            "featured_expires_at": m.featured_expires_at.isoformat() if m.featured_expires_at else None,
+        }

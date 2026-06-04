@@ -13,7 +13,7 @@ class Application(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     username: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    id_number: Mapped[str] = mapped_column(String(18), unique=True, nullable=False, index=True)
+    id_number: Mapped[str | None] = mapped_column(String(18), unique=True, nullable=True, index=True)
     applicant_name: Mapped[str] = mapped_column(String(50), nullable=False)
     applicant_phone: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     applicant_address: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -21,7 +21,10 @@ class Application(Base):
     qualifications: Mapped[str | None] = mapped_column(Text, nullable=True)
     qualification_files: Mapped[str | None] = mapped_column(Text, nullable=True)
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False, default='')
-    requested_tier: Mapped[str | None] = mapped_column(String(20), nullable=True, default=None)
+    member_type: Mapped[str] = mapped_column(String(20), default="individual", nullable=False)
+    requested_tier: Mapped[str | None] = mapped_column(String(30), nullable=True, default=None)
+    company_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    business_reg_no: Mapped[str | None] = mapped_column(String(50), nullable=True)
     status: Mapped[str] = mapped_column(
         String(20),
         default="待審核", nullable=False, index=True

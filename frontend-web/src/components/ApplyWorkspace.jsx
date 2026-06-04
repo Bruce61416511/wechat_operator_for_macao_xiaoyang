@@ -103,7 +103,10 @@ const INITIAL_FORM = {
   id_number: "",
   applicant_phone: "",
   applicant_address: "",
+  member_type: "",
   requested_tier: "",
+  company_name: "",
+  business_reg_no: "",
   career_history: "",
   qualifications: "",
   qualification_files: "",
@@ -217,15 +220,21 @@ export default function ApplyWorkspace({ onProgressChange }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  function validateStep(stepIndex) {
+      function validateStep(stepIndex) {
     const errs = {};
+    const isEnterprise = formData.member_type === "企業會員" || formData.member_type === "高級會員";
     if (stepIndex === 0) {
+      if (!formData.member_type) errs.member_type = "請選擇會員類型";
       if (!formData.username || formData.username.length < 6) errs.username = "請輸入有效的郵箱地址";
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.username)) errs.username = "請輸入有效的郵箱格式";
       if (!formData.password || formData.password.length < 6) errs.password = "密碼至少 6 位";
       if (!formData.applicant_name) errs.applicant_name = "請輸入姓名";
-      if (!formData.id_number || formData.id_number.length < 15) errs.id_number = "請輸入有效證件號碼";
-      if (!formData.applicant_phone || formData.applicant_phone.length < 5) errs.applicant_phone = "請輸入聯繫電話";
+      if (!isEnterprise && (!formData.id_number || formData.id_number.length < 15)) errs.id_number = "請輸入有效證件號碼";
+      if (!formData.applicant_phone || formData.applicant_phone.length < 5) errs.applicant_phone = "請輸入聯絡電話";
+      if (isEnterprise) {
+        if (!formData.company_name) errs.company_name = "請輸入公司名稱";
+        if (!formData.business_reg_no) errs.business_reg_no = "請輸入商業登記號";
+      }
     }
     if (stepIndex === 1) {
       if (!formData.career_history || formData.career_history.trim().length < 10) {
@@ -246,7 +255,6 @@ export default function ApplyWorkspace({ onProgressChange }) {
     }
     return errs;
   }
-
   function handleNext() {
     const errs = validateStep(activeStep);
     setErrors(errs);
@@ -268,7 +276,8 @@ export default function ApplyWorkspace({ onProgressChange }) {
     setSubmitting(true);
     setSubmitError("");
     try {
-      const { declaration_agreed, ...payload } = formData;
+      const { declaration_agreed, requested_tier, ...rest } = formData;
+      const payload = { ...rest, requested_tier: formData.member_type };
       await submitApplication(payload);
       alert("申請已成功提交！");
       window.location.href = "/";
@@ -288,7 +297,7 @@ export default function ApplyWorkspace({ onProgressChange }) {
 
   function getStepStatus(index) {
     if (index === 0) {
-      const hasData = formData.username || formData.applicant_name || formData.id_number;
+      const hasData = formData.member_type;
       if (!hasData) return { status: "danger", statusText: "未填寫" };
       const errs = validateStep(0);
       if (Object.keys(errs).length > 0) return { status: "warn", statusText: "待完善" };

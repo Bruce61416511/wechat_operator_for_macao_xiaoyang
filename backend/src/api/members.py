@@ -20,6 +20,16 @@ class MemberUpdate(BaseModel):
     career_history: str | None = None
     qualifications: str | None = None
     qualification_files: str | None = None
+    member_type: str | None = None
+    company_name: str | None = None
+    business_reg_no: str | None = None
+    company_logo_url: str | None = None
+    brand_description: str | None = None
+    is_featured: bool | None = None
+    featured_expires_at: str | None = None
+    member_type: str | None = None
+    company_name: str | None = None
+    business_reg_no: str | None = None
 
 
 class StaffMemberUpdate(BaseModel):
@@ -28,6 +38,7 @@ class StaffMemberUpdate(BaseModel):
     tier: str | None = None
     annual_fee: int | None = None
     is_active: bool | None = None
+    member_type: str | None = None
 
 
 from ..services.event_service import EventService
@@ -256,6 +267,13 @@ class AdminMemberUpdate(BaseModel):
     career_history: str | None = None
     qualifications: str | None = None
     qualification_files: str | None = None
+    member_type: str | None = None
+    company_name: str | None = None
+    business_reg_no: str | None = None
+    company_logo_url: str | None = None
+    brand_description: str | None = None
+    is_featured: bool | None = None
+    featured_expires_at: str | None = None
 
 
 @router_admin.get("", response_model=dict)
