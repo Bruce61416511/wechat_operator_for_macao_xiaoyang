@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -208,6 +208,7 @@ class MemberService:
             "is_active": m.is_active,
             "created_at": m.created_at.isoformat() if m.created_at else None,
             "updated_at": m.updated_at.isoformat() if m.updated_at else None,
+            "joined_at": m.joined_at.isoformat() if m.joined_at else None,
             "address": m.address,
             "career_history": m.career_history,
             "qualifications": m.qualifications,

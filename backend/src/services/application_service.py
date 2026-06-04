@@ -120,6 +120,7 @@ class ApplicationService:
             qualification_files=app.qualification_files,
             company_name=app.company_name,
             business_reg_no=app.business_reg_no,
+            joined_at=datetime.now(timezone.utc),
         )
         self.db.add(member)
         await self.db.flush()
