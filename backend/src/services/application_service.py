@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -8,19 +8,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.application import Application
 from ..models.member import Member
+from ..services.member_service import TIER_FEE
 
 
 class ApplicationService:
-    """入會申請服務：CRUD + 狀態流轉 + 重複檢測 + 駁回重申請"""
+    """入會申請服務：CRUD + 狀態流�?+ 重複檢測 + 駁回重申�?""
 
     VALID_TRANSITIONS = {
-        "待審核": ["初審通過", "初審不通過"],
+        "待審�?: ["初審通過", "初審不通過"],
         "初審通過": ["終審通過", "終審不通過"],
-        "終審通過": ["待繳費"],
-        "待繳費": ["已繳費", "已過期"],
-        "已繳費": ["已入會", "待繳費"],
-        "初審不通過": ["待審核"],
-        "終審不通過": ["待審核"],
+        "終審通過": ["待繳�?],
+        "待繳�?: ["已繳�?, "已過�?],
+        "已繳�?: ["已入�?, "待繳�?],
+        "初審不通過": ["待審�?],
+        "終審不通過": ["待審�?],
     }
 
     RESUBMIT_COOLDOWN = {"初審不通過": timedelta(0), "終審不通過": timedelta(days=30)}
@@ -34,7 +35,7 @@ class ApplicationService:
             raise HTTPException(status_code=409, detail={"error": "duplicate_application", "message": "該用戶名已被佔用"})
         existing = await self.db.execute(select(Application).where(Application.id_number == data["id_number"]))
         if existing.scalar_one_or_none():
-            raise HTTPException(status_code=409, detail={"error": "duplicate_application", "message": "該身份證號已提交過申請"})
+            raise HTTPException(status_code=409, detail={"error": "duplicate_application", "message": "該身份證號已提交過申�?})
         
         from ..core.security import hash_password
         data['password_hash'] = hash_password(data.pop('password', ''))
@@ -53,7 +54,7 @@ class ApplicationService:
         result = await self.db.execute(select(Application).where(Application.id == app_id))
         app = result.scalar_one_or_none()
         if not app:
-            raise HTTPException(status_code=404, detail={"error": "not_found", "message": "申請不存在"})
+            raise HTTPException(status_code=404, detail={"error": "not_found", "message": "申請不存�?})
         return app
 
     async def list_applications(self, status: str | None = None, id_number: str | None = None, member_id = None, page: int = 1, page_size: int = 20) -> dict:
@@ -73,12 +74,12 @@ class ApplicationService:
         app = await self.get_application(app_id)
         allowed = self.VALID_TRANSITIONS.get(app.status, [])
         if new_status not in allowed:
-            raise HTTPException(status_code=400, detail={"error": "invalid_transition", "message": f"無法從 {app.status} 變更爲 {new_status}"})
+            raise HTTPException(status_code=400, detail={"error": "invalid_transition", "message": f"無法�?{app.status} 變更�?{new_status}"})
         app.status = new_status
         if extra:
             for k, v in extra.items():
                 setattr(app, k, v)
-        if new_status == "待繳費":
+        if new_status == "待繳�?:
             app.payment_proof_url = None
             app.payment_due_date = datetime.now(timezone.utc) + timedelta(days=7)
         await self.db.flush()
@@ -86,7 +87,7 @@ class ApplicationService:
 
     async def verify_payment_and_create_member(self, app_id: uuid.UUID, verifier_id: uuid.UUID) -> dict:
         app = await self.get_application(app_id)
-        if app.status not in ("已繳費", "待繳費"):
+        if app.status not in ("已繳�?, "待繳�?):
             raise HTTPException(status_code=400, detail={"error": "invalid_status", "message": "當前狀態不允許操作"})
         app.payment_verified_by = verifier_id
         app.payment_verified_at = datetime.now(timezone.utc)
@@ -97,12 +98,12 @@ class ApplicationService:
             member = member_result.scalar_one_or_none()
             if member:
                 member.tier = app.requested_tier or member.tier
-                member.annual_fee = {"個人會員": 300, "企業會員": 600, "高級會員": 1000}.get(app.requested_tier, 500)
+                member.annual_fee = TIER_FEE.get(app.requested_tier, 500)
                 member.is_active = True
                 member.updated_at = datetime.now(timezone.utc)
-                app.status = "已入會"
+                app.status = "已入�?
                 await self.db.flush()
-                return {"application_id": str(app.id), "member_id": str(member.id), "status": "已入會"}
+                return {"application_id": str(app.id), "member_id": str(member.id), "status": "已入�?}
 
         # New member flow: create member record
         member = Member(
@@ -112,27 +113,27 @@ class ApplicationService:
             phone=app.applicant_phone,
             tier=app.requested_tier or "個人會員",
             password_hash=app.password_hash,
-            annual_fee={"個人會員": 300, "企業會員": 600, "高級會員": 1000}.get(app.requested_tier, 500),
+            annual_fee=TIER_FEE.get(app.requested_tier, 500),
         )
         self.db.add(member)
         await self.db.flush()
         app.member_id = member.id
-        app.status = "已入會"
+        app.status = "已入�?
         await self.db.flush()
-        return {"application_id": str(app.id), "member_id": str(member.id), "status": "已入會"}
+        return {"application_id": str(app.id), "member_id": str(member.id), "status": "已入�?}
 
     async def resubmit(self, app_id: uuid.UUID, updated_data: dict) -> Application:
-        """駁回重申請：檢查冷卻期，保留原數據，修改後重新提交"""
+        """駁回重申請：檢查冷卻期，保留原數據，修改後重新提�?""
         old_app = await self.get_application(app_id)
         if old_app.status not in ("初審不通過", "終審不通過"):
-            raise HTTPException(status_code=400, detail={"error": "not_rejected", "message": "只有被駁回的申請才能重申請"})
+            raise HTTPException(status_code=400, detail={"error": "not_rejected", "message": "只有被駁回的申請才能重申�?})
 
         cooldown = self.RESUBMIT_COOLDOWN.get(old_app.status, timedelta(0))
         if cooldown > timedelta(0):
             elapsed = datetime.now(timezone.utc) - old_app.updated_at.replace(tzinfo=timezone.utc)
             if elapsed < cooldown:
                 remaining = (cooldown - elapsed).days
-                raise HTTPException(status_code=400, detail={"error": "cooldown", "message": f"終審駁回需等待30天，還剩 {remaining} 天"})
+                raise HTTPException(status_code=400, detail={"error": "cooldown", "message": f"終審駁回需等待30天，還剩 {remaining} �?})
 
         # Delete old app and create new one
         old_username = old_app.username
@@ -163,7 +164,7 @@ class ApplicationService:
 
     async def get_rejection_reason(self, app_id: uuid.UUID) -> dict:
         app = await self.get_application(app_id)
-        reason = app.screening_result or app.final_review_result or "無"
+        reason = app.screening_result or app.final_review_result or "�?
         return {"application_id": str(app.id), "status": app.status, "reason": reason, "updated_at": app.updated_at.isoformat() if app.updated_at else None}
 
     def _to_dict(self, app: Application) -> dict:

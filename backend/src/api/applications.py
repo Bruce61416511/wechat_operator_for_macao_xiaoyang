@@ -9,6 +9,7 @@ from sqlalchemy import select
 from pydantic import BaseModel, Field
 
 from ..core.database import get_db
+from ..services.member_service import TIER_FEE
 from ..core.security import require_role
 from ..services.application_service import ApplicationService
 from ..services.screening_service import ScreeningService
@@ -171,7 +172,7 @@ async def final_review(app_id: str, body: FinalReviewRequest, user: dict = Depen
                 member.real_name = app.applicant_name
                 if tier_changed:
                     member.tier = app.requested_tier
-                    member.annual_fee = {"普通會員": 500, "高級會員": 1000}.get(app.requested_tier, member.annual_fee)
+                    member.annual_fee = TIER_FEE.get(app.requested_tier, member.annual_fee)
                     member.updated_at = datetime.now(timezone.utc)
                     await db.flush()
                     await app_svc.transition_status(app.id, "待繳費")

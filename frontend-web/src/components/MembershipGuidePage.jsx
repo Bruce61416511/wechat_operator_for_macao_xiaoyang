@@ -89,7 +89,7 @@ export default function MembershipGuidePage() {
           />
           <TierCard
             name="高級會員"
-            price="MOP 1,000"
+            price="MOP 5,000"
             gradient="from-[#b7950b] to-[#d4a017]"
             recommended
             benefits={[
@@ -101,7 +101,7 @@ export default function MembershipGuidePage() {
           />
           <TierCard
             name="理事"
-            price="MOP 3,000"
+            price="免年費"
             gradient="from-[#7b2d8b] to-[#9b4dca]"
             benefits={[
               { title: "協會決策參與", desc: "參與協會重大事項表決" },
