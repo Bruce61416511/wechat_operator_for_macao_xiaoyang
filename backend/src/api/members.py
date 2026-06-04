@@ -351,11 +351,12 @@ async def admin_delete_application(
 async def admin_list_applications(
     page: int = Query(1, ge=1),
     page_size: int = Query(200, ge=1, le=500),
+    status: str | None = Query(default=None),
     user: dict = Depends(require_role("root")),
     db: AsyncSession = Depends(get_db)
 ):
     svc = ApplicationService(db)
-    result = await svc.list_applications(page=page, page_size=page_size)
+    result = await svc.list_applications(status=status, page=page, page_size=page_size)
     items = []
     for app in result.get("items", []):
         uname = app.get("username", "") or ""
@@ -380,10 +381,15 @@ async def admin_list_applications(
             "requested_tier": app.get("requested_tier", ""),
             "submitted_at": app.get("submitted_at"),
             "member_id": app.get("member_id"),
+            "applicant_address": app.get("applicant_address", ""),
             "career_history": app.get("career_history", ""),
             "qualifications": app.get("qualifications", ""),
             "qualification_files": app.get("qualification_files", ""),
             "payment_proof_url": app.get("payment_proof_url", ""),
+            "screening_result": app.get("screening_result", ""),
+            "final_review_result": app.get("final_review_result", ""),
+            "company_name": app.get("company_name", ""),
+            "business_reg_no": app.get("business_reg_no", ""),
         })
     return {"items": items, "total": len(items), "page": page}
 

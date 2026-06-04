@@ -175,11 +175,11 @@ export default function BasicInfoForm({ data, onChange, errors }) {
               <ErrorText>{errors?.applicant_name}</ErrorText>
             </div>
             <div>
-              <Label required={!isEnterprise}>證件號碼</Label>
+              <Label required>證件號碼</Label>
               <ConflictWarning>{conflicts.id_number}</ConflictWarning>
               <input
                 className={fieldClass(errors?.id_number || conflicts.id_number)}
-                placeholder={isEnterprise ? "聯絡人身份證號碼（可選）" : "身份證 / 護照號碼，15-18 位"}
+                placeholder="身份證 / 護照號碼，15-18 位"
                 autoComplete="off"
                 value={data.id_number || ""}
                 onChange={(e) => set("id_number", e.target.value)}

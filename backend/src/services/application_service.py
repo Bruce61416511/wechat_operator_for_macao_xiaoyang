@@ -192,4 +192,6 @@ class ApplicationService:
             "requested_tier": app.requested_tier,
             "screening_result": app.screening_result,
             "final_review_result": app.final_review_result,
+            "company_name": app.company_name,
+            "business_reg_no": app.business_reg_no,
         }
