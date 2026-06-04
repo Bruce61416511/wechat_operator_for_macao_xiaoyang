@@ -335,6 +335,49 @@ async def admin_delete_member(
     return result
 
 
+@router_admin.post("/{member_id}/renew", response_model=dict)
+async def admin_renew_member(
+    member_id: str,
+    user: dict = Depends(require_role("root")),
+    db: AsyncSession = Depends(get_db)
+):
+    svc = MemberService(db)
+    member = await svc.get_by_id(uuid.UUID(member_id))
+    if not member:
+        raise HTTPException(status_code=404, detail="會員不存在")
+    result = await svc.renew_member(member)
+    return result
+
+
+# ---- DEBUG: 測試過期 & 續費 ----
+class SetExpiresRequest(BaseModel):
+    days_offset: int = -1  # -1=昨天過期, 30=30天後, 0=今天
+
+@router_admin.post("/{member_id}/debug-set-expires", response_model=dict)
+async def debug_set_expires(
+    member_id: str,
+    body: SetExpiresRequest,
+    user: dict = Depends(require_role("root")),
+    db: AsyncSession = Depends(get_db)
+):
+    from datetime import timedelta
+    svc = MemberService(db)
+    member = await svc.get_by_id(uuid.UUID(member_id))
+    if not member:
+        raise HTTPException(status_code=404, detail="會員不存在")
+    member.expires_at = datetime.now(timezone.utc) + timedelta(days=body.days_offset)
+    await db.flush()
+    return {"id": str(member.id), "expires_at": member.expires_at.isoformat()}
+
+@router_admin.post("/debug-run-expiry", response_model=dict)
+async def debug_run_expiry(
+    user: dict = Depends(require_role("root")),
+    db: AsyncSession = Depends(get_db)
+):
+    svc = MemberService(db)
+    count = await svc.auto_update_status()
+    return {"expired_count": count}
+
 @router_admin.delete("/applications/{app_id}", response_model=dict)
 async def admin_delete_application(
     app_id: str,

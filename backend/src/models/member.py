@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from datetime import datetime
 
 from sqlalchemy import String, DateTime, Boolean, Text, func
@@ -23,6 +23,8 @@ class Member(Base):
     annual_fee: Mapped[int] = mapped_column(default=0, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    joined_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     career_history: Mapped[str | None] = mapped_column(Text, nullable=True)
     qualifications: Mapped[str | None] = mapped_column(Text, nullable=True)
     qualification_files: Mapped[str | None] = mapped_column(Text, nullable=True)

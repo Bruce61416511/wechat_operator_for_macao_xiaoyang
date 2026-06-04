@@ -112,12 +112,29 @@ class MemberService:
         """自動更新會員狀態：會費到期→過期"""
         now = datetime.now(timezone.utc)
         result = await self.db.execute(select(Member).where(Member.is_active.is_(True)))
+        result = await self.db.execute(select(Member).where(Member.is_active.is_(True), Member.expires_at.isnot(None), Member.expires_at < now)
+        expired = result.scalars().all()
+        for m in expired:
+            m.is_active = False
+            logger.info(f"MEMBER-EXPIRED | id={m.id} | tier={m.tier} | expired_at={m.expires_at}")
+        if expired:
+            await self.db.flush()
+        return len(expired)
         members = result.scalars().all()
-        count = 0
-        for m in members:
-            if m.annual_fee > 0:
-                continue
-            count += 1
+
+    async def renew_member(self, member: Member) -> dict:
+        """續費：未過期累加365天，已過期從今天起算"""
+        from datetime import timedelta
+        now = datetime.now(timezone.utc)
+        if member.expires_at and member.expires_at > now:
+            member.expires_at = member.expires_at + timedelta(days=365)
+        else:
+            member.expires_at = now + timedelta(days=365)
+        member.is_active = True
+        member.updated_at = now
+        self._audit_log("renew", member.id, {"new_expires_at": member.expires_at.isoformat()})
+        await self.db.flush()
+        return {"id": str(member.id), "expires_at": member.expires_at.isoformat(), "is_active": member.is_active}
         return count
 
     async def export_csv(self) -> str:
@@ -207,6 +224,7 @@ class MemberService:
             "annual_fee": m.annual_fee,
             "is_active": m.is_active,
             "created_at": m.created_at.isoformat() if m.created_at else None,
+            "expires_at": m.expires_at.isoformat() if m.expires_at else None,
             "updated_at": m.updated_at.isoformat() if m.updated_at else None,
             "joined_at": m.joined_at.isoformat() if m.joined_at else None,
             "address": m.address,
@@ -236,6 +254,8 @@ class MemberService:
             "annual_fee": m.annual_fee,
             "is_active": m.is_active,
             "created_at": m.created_at.isoformat() if m.created_at else None,
+            "joined_at": m.joined_at.isoformat() if m.joined_at else None,
+            "expires_at": m.expires_at.isoformat() if m.expires_at else None,
             "address": m.address,
             "career_history": m.career_history,
             "qualifications": m.qualifications,

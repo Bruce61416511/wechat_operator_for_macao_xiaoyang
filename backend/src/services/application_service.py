@@ -121,6 +121,7 @@ class ApplicationService:
             company_name=app.company_name,
             business_reg_no=app.business_reg_no,
             joined_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=365),
         )
         self.db.add(member)
         await self.db.flush()

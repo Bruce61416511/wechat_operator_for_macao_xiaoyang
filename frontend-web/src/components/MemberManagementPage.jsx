@@ -103,6 +103,7 @@ const MEMBER_FIELD_GROUPS = [
       { key: "annual_fee",  label: "年費",   render: v => v ? `MOP ${v.toLocaleString()}` : "-" },
       { key: "is_active",   label: "狀態",   render: (v) => statusDot(v) },
       { key: "joined_at",  label: "入會時間", render: formatDate },
+      { key: "expires_at",  label: "到期時間", render: formatDate },
       { key: "updated_at",  label: "最後更新", render: formatDate },
       { key: "payment_proof_url", label: "繳費憑證", render: (v) => v ? <a href={BACKEND+v} target="_blank" rel="noreferrer" className="text-[#006252] underline text-[13px] font-medium">查看憑證</a> : <span className="text-[#bcc7c5] text-[13px]">無</span> },
     ],
@@ -294,6 +295,18 @@ export default function MemberManagementPage() {
   }
 
 
+  async function handleRenew(memberId) {
+    if (!confirm("確定為該會員續費365天？")) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${MEMBERS_API}/${memberId}/renew`, {
+        method: "POST", headers: authHeaders,
+      });
+      if (!res.ok) { const d = await res.json().catch(()=>({})); throw new Error(d.detail || "續費失敗"); }
+      setMsg("續費成功，已延長365天"); fetchData();
+    } catch(e) { setMsg(e.message); } finally { setSaving(false); }
+  }
+
   // App edit
   function openAppEdit(app) {
     setAppEditTarget(app.id);
@@ -443,6 +456,7 @@ export default function MemberManagementPage() {
                               <>
                                 <button onClick={() => openEdit(item)} className="text-[#006252] text-[13px] font-semibold hover:underline">編輯</button>
                                 <button onClick={() => handleDelete(item.id)} className="text-[#c53030] text-[13px] font-semibold hover:underline">刪除</button>
+                                <button onClick={() => handleRenew(item.id)} className="text-[#1a6090] text-[13px] font-semibold hover:underline">續費</button>
                               </>
                             )}
                             {isAppTab && (
