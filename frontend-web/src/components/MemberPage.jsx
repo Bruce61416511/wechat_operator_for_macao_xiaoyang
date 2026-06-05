@@ -642,7 +642,7 @@ function ContactCard() {
 }
 
 export default function MemberPage() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -703,10 +703,10 @@ export default function MemberPage() {
         <div className="mt-4 grid grid-cols-[1fr_380px] items-stretch gap-4">
           <div className="flex h-full flex-col gap-4">
             <div className="grid grid-cols-[1fr_344px] gap-4">
-              <RecentUpdates items={feedItems} onViewAll={function() { fetch("/v1/members/me/feed?limit=50", { headers: { Authorization: "Bearer " + sessionStorage.getItem("token") } }).then(function(r) { return r.json(); }).then(function(d) { setAllFeedItems(d.items || []); setShowFeedAll(true); }).catch(function() {}); }} />
-              <AssistantMini />
+              {(user?.role !== "root") && <RecentUpdates items={feedItems} onViewAll={function() { fetch("/v1/members/me/feed?limit=50", { headers: { Authorization: "Bearer " + sessionStorage.getItem("token") } }).then(function(r) { return r.json(); }).then(function(d) { setAllFeedItems(d.items || []); setShowFeedAll(true); }).catch(function() {}); }} />}
+              {(user?.role !== "root") && <AssistantMini />}
             </div>
-            <Recommendations events={upcomingEvents}  />
+            {(user?.role !== "root") && <Recommendations events={upcomingEvents}  />}
           </div>
           <div className="flex h-full flex-col gap-4">
             <TrustCard />
