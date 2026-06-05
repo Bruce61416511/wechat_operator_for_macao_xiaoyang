@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { getMyProfile } from "../services/api.js";
 import UpdateProfileModal from "./UpdateProfileModal.jsx";
 import ProfileViewModal from "./ProfileViewModal.jsx";
@@ -7,6 +7,7 @@ import PaymentModal from "./PaymentModal.jsx";
 import { useAuth } from "../contexts/AuthContext";
 import NotificationModal from "./NotificationModal.jsx"
 import ResourceManagementPanel from "./ResourceManagementPanel.jsx"
+import RootDashboard from "./RootDashboard.jsx"
 const sidebarItems = [
   { label: '會員中心', active: true, icon: HomeIcon },
   { label: '公告管理', icon: BellIcon, adminOnly: true },
@@ -702,11 +703,17 @@ export default function MemberPage() {
         <MemberHero profile={profile} onUpdateProfile={() => setShowUpdateModal(true)} onPayment={() => setShowPayment(true)} />
         <div className="mt-4 grid grid-cols-[1fr_380px] items-stretch gap-4">
           <div className="flex h-full flex-col gap-4">
+            {user?.role === "root" ? (
+              <RootDashboard />
+            ) : (
+              <>
             <div className="grid grid-cols-[1fr_344px] gap-4">
               {(user?.role !== "root") && <RecentUpdates items={feedItems} onViewAll={function() { fetch("/v1/members/me/feed?limit=50", { headers: { Authorization: "Bearer " + sessionStorage.getItem("token") } }).then(function(r) { return r.json(); }).then(function(d) { setAllFeedItems(d.items || []); setShowFeedAll(true); }).catch(function() {}); }} />}
               {(user?.role !== "root") && <AssistantMini />}
             </div>
-            {(user?.role !== "root") && <Recommendations events={upcomingEvents}  />}
+                          {(user?.role !== "root") && <Recommendations events={upcomingEvents}  />}
+              </>
+            )}
           </div>
           <div className="flex h-full flex-col gap-4">
             <TrustCard />

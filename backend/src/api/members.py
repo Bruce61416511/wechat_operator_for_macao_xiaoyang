@@ -599,3 +599,112 @@ async def admin_applications_summary(
     items = list(seen.values())
     return {"items": items, "total": len(items), "page": 1}
 
+
+
+@router_admin.get("/dashboard", response_model=dict)
+async def admin_dashboard(
+    user: dict = Depends(require_role("root")),
+    db: AsyncSession = Depends(get_db)
+):
+    """Root 專屬儀表板：等級分布、健康度、審批流水線、公司分布"""
+    from sqlalchemy import select
+    from ..models.member import Member
+    from ..models.application import Application
+    from datetime import datetime, timedelta
+    from collections import defaultdict
+
+    now_naive = datetime.utcnow()
+    soon_naive = now_naive + timedelta(days=30)
+
+    # --- members ---
+    result = await db.execute(select(Member))
+    members = result.scalars().all()
+
+    total = 0
+    active_count = 0
+    expired_count = 0
+    tiers = defaultdict(int)
+    fee_income = 0
+    company_members = defaultdict(list)  # company_name -> list of member dicts
+    health_soon = 0
+
+    for m in members:
+        if m.tier == "理事":
+            continue
+        total += 1
+        tiers[m.tier] += 1
+        fee_income += m.annual_fee or 0
+        if m.is_active:
+            active_count += 1
+        else:
+            expired_count += 1
+
+        # health check
+        if m.is_active and m.expires_at:
+            exp = m.expires_at
+            if exp.tzinfo:
+                exp = exp.replace(tzinfo=None)
+            if exp <= soon_naive and exp > now_naive:
+                health_soon += 1
+
+        # company aggregation
+        cname = (m.company_name or "").strip()
+        if cname:
+            company_members[cname].append({
+                "real_name": m.real_name,
+                "tier": m.tier,
+                "is_active": m.is_active,
+            })
+
+    # --- applications ---
+    app_result = await db.execute(select(Application))
+    apps = app_result.scalars().all()
+
+    pipeline = [
+        {"stage": "初篩通過", "key": "初篩通過", "count": 0},
+        {"stage": "終篩通過", "key": "終篩通過", "count": 0},
+        {"stage": "待繳費",   "key": "待繳費",   "count": 0},
+        {"stage": "已繳費",   "key": "已繳費",   "count": 0},
+        {"stage": "已入會",   "key": "已入會",   "count": 0},
+    ]
+    pending_count = 0
+    for a in apps:
+        s = a.status or ""
+        for p in pipeline:
+            if p["key"] == s:
+                p["count"] += 1
+                break
+        if s in ("初篩通過", "終篩通過", "待繳費"):
+            pending_count += 1
+
+    # --- company distribution (sorted by member count desc) ---
+    company_list = []
+    for cname, mems in sorted(company_members.items(), key=lambda x: -len(x[1])):
+        ctiers = defaultdict(int)
+        active_in_co = 0
+        for m in mems:
+            ctiers[m["tier"]] += 1
+            if m["is_active"]:
+                active_in_co += 1
+        company_list.append({
+            "company_name": cname,
+            "total": len(mems),
+            "active": active_in_co,
+            "tiers": dict(ctiers),
+        })
+
+    return {
+        "total": total,
+        "active": active_count,
+        "expired": expired_count,
+        "fee_income": fee_income,
+        "pending_tasks": pending_count,
+        "tiers": dict(tiers),
+        "health": {
+            "active": active_count,
+            "soon": health_soon,
+            "expired": expired_count,
+        },
+        "pipeline": pipeline,
+        "companies": company_list,
+    }
