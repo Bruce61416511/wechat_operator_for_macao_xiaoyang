@@ -12,7 +12,7 @@ from .api.auth import router as auth_router
 from .api.applications import router as applications_router
 from .api.constitution_rules import router as constitution_rules_router
 from .api.chat import router as chat_router
-from .api.members import router as members_router, router_admin as admin_members_router
+from .api.members import router as members_router, router_admin as admin_members_router, public_router
 from .api.events import router as events_router
 from .api.notifications import router as notifications_router
 from .api.announcements import router as announcements_router
@@ -34,6 +34,7 @@ app.include_router(auth_router)
 app.include_router(applications_router)
 app.include_router(constitution_rules_router)
 app.include_router(chat_router)
+app.include_router(public_router)
 app.include_router(members_router)
 app.include_router(admin_members_router)
 app.include_router(events_router)

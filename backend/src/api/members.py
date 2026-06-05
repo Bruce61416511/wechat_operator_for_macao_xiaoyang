@@ -10,6 +10,83 @@ from ..core.security import get_current_user, require_role
 from ..services.member_service import MemberService
 from ..services.application_service import ApplicationService
 
+
+public_router = APIRouter(prefix="/v1/public", tags=["public"])
+
+@public_router.get("/stats")
+async def get_public_stats(db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+    from ..models.member import Member
+    from ..models.application import Application
+    from datetime import datetime, timedelta
+
+    now_naive = datetime.utcnow()
+    soon_naive = now_naive + timedelta(days=30)
+
+    # --- members ---
+    result = await db.execute(select(Member))
+    members = result.scalars().all()
+
+    total = 0
+    active = 0
+    expired_count = 0
+    tiers = {}
+    fee_income = 0
+
+    for m in members:
+        if m.tier == "理事":  # skip root
+            continue
+        total += 1
+        tiers[m.tier] = tiers.get(m.tier, 0) + 1
+        fee_income += m.annual_fee or 0
+        if not m.is_active:
+            expired_count += 1
+        else:
+            active += 1
+
+    enterprise_count = tiers.get("企業會員", 0) + tiers.get("高級會員", 0)
+
+    # --- health ---
+    health_soon = 0
+    for m in members:
+        if m.tier == "理事" or not m.is_active or not m.expires_at:
+            continue
+        exp = m.expires_at
+        if exp.tzinfo:
+            exp = exp.replace(tzinfo=None)
+        if exp <= soon_naive and exp > now_naive:
+            health_soon += 1
+
+    # --- applications ---
+    app_result = await db.execute(select(Application))
+    apps = app_result.scalars().all()
+    app_stats = {}
+    for a in apps:
+        s = a.status
+        app_stats[s] = app_stats.get(s, 0) + 1
+
+    # --- recent members ---
+    with_joined = [m for m in members if m.joined_at and m.tier != "理事"]
+    with_joined.sort(key=lambda m: m.joined_at, reverse=True)
+    recent_list = []
+    for m in with_joined[:6]:
+        jt = m.joined_at.isoformat() if m.joined_at else None
+        recent_list.append({"name": m.real_name, "tier": m.tier, "joined_at": jt})
+
+    return {
+        "total": total,
+        "active": active,
+        "expired": expired_count,
+        "enterprise_count": enterprise_count,
+        "fee_income": fee_income,
+        "tiers": tiers,
+        "tier_count": len(tiers),
+        "health": {"active": active, "expired": expired_count, "soon": health_soon},
+        "applications": app_stats,
+        "recent_members": recent_list,
+    }
+
+
 router = APIRouter(prefix="/v1/members", tags=["members"])
 
 
