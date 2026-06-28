@@ -86,9 +86,33 @@ async def startup():
 @app.get("/")
 async def root():
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/pages/index.html")
+    return RedirectResponse(url="/app/")
 
 
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.middleware("http")
+async def spa_fallback_middleware(request, call_next):
+    """SPA fallback: 静态文件从 dist 根目录提供，其他路径返回 index.html"""
+    response = await call_next(request)
+    if response.status_code == 404:
+        path = request.url.path
+        # API 和已知静态路径不处理
+        skip = ["/v1/", "/docs", "/openapi.json", "/health", "/uploads", "/pages", "/assets", "/redoc"]
+        if any(path.startswith(p) for p in skip):
+            return response
+        # 静态文件：从 dist 根目录提供（public 图片等）
+        filename = path.lstrip("/")
+        file_path = new_frontend_dist / filename
+        if file_path.exists() and file_path.is_file():
+            from fastapi.responses import FileResponse
+            return FileResponse(str(file_path))
+        # SPA fallback
+        idx = new_frontend_dist / "index.html"
+        if idx.exists():
+            from fastapi.responses import FileResponse
+            return FileResponse(str(idx))
+    return response

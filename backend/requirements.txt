@@ -17,3 +17,4 @@ pytest-asyncio==0.25.0          # 异步测试支持
 ruff==0.8.6                    # 代码检查 & 格式化
 black==24.10.0                 # 代码格式化
 python-dotenv==1.0.1           # 加载.env环境变量
+aiosqlite                      # SQLite异步驱动（DATABASE_URL=sqlite+aiosqlite 需要）
