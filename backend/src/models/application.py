@@ -13,9 +13,11 @@ class Application(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     username: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    id_number: Mapped[str | None] = mapped_column(String(18), unique=True, nullable=True, index=True)
+    id_number: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True, index=True)
+    id_type: Mapped[str] = mapped_column(String(20), default="mainland_id", nullable=False)
     applicant_name: Mapped[str] = mapped_column(String(50), nullable=False)
     applicant_phone: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    phone_country_code: Mapped[str] = mapped_column(String(10), default="+853", nullable=False)
     applicant_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     career_history: Mapped[str | None] = mapped_column(Text, nullable=True)
     qualifications: Mapped[str | None] = mapped_column(Text, nullable=True)

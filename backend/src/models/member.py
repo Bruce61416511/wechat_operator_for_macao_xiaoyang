@@ -13,9 +13,11 @@ class Member(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     username: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    id_number: Mapped[str | None] = mapped_column(String(18), unique=True, nullable=True)
+    id_number: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True)
+    id_type: Mapped[str] = mapped_column(String(20), default="mainland_id", nullable=False)
     real_name: Mapped[str] = mapped_column(String(50), nullable=False)
     phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    phone_country_code: Mapped[str] = mapped_column(String(10), default="+853", nullable=False)
     wechat_openid: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False, default="")
     tier: Mapped[str] = mapped_column(String(30), default="個人會員", nullable=False)

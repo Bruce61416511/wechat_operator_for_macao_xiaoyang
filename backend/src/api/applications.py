@@ -23,9 +23,11 @@ UPLOAD_DIR = Path("uploads/payment")
 
 class ApplicationCreate(BaseModel):
     username: str = Field(min_length=6, max_length=50, pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
-    id_number: str | None = Field(default=None, min_length=15, max_length=18)
+    id_number: str | None = Field(default=None, min_length=5, max_length=32)
+    id_type: str = 'mainland_id'
     applicant_name: str = Field(min_length=1, max_length=50)
     applicant_phone: str = Field(min_length=5, max_length=20)
+    phone_country_code: str = '+853'
     applicant_address: str | None = None
     career_history: str | None = None
     qualifications: str | None = None
@@ -50,6 +52,8 @@ class FinalReviewRequest(BaseModel):
 class ResubmitRequest(BaseModel):
     applicant_name: str | None = None
     applicant_phone: str | None = None
+    id_type: str | None = None
+    phone_country_code: str | None = None
     applicant_address: str | None = None
     career_history: str | None = None
     qualifications: str | None = None

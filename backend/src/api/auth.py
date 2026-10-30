@@ -106,3 +106,86 @@ async def reset_password(req: ResetPasswordRequest, db = Depends(get_db)):
     member.password_hash = hash_password(req.new_password)
     await db.commit()
     return {"message": "密碼重置成功"}
+
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    real_name: str
+    phone: str
+    phone_country_code: str = "+853"
+    id_type: str = "mainland_id"
+    id_number: str
+    address: str | None = None
+
+
+VALID_ID_TYPES = {"mainland_id", "hkmo_pass", "macao_id", "passport"}
+
+
+@router.post("/register", response_model=TokenResponse)
+async def register(req: RegisterRequest, db = Depends(get_db)):
+    """小程序/新用戶直接註冊：註冊即會員，返回 token 即登錄"""
+    from datetime import datetime, timezone, timedelta
+    from ..core.validation import validate_email_username
+    from ..models.application import Application
+    from ..services.member_service import TIER_FEE
+
+    # 1. 校驗並規範化郵箱（username）
+    username = validate_email_username(req.email.strip().lower())
+
+    # 2. 密碼長度校驗
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="密碼至少 6 位")
+
+    # 3. 證件類型校驗
+    if req.id_type not in VALID_ID_TYPES:
+        raise HTTPException(status_code=400, detail="證件類型不合法")
+
+    # 3.1 證件號碼必填校驗
+    id_number = req.id_number.strip()
+    if not id_number:
+        raise HTTPException(status_code=400, detail="證件號碼不能為空")
+
+    # 4. 手機號長度校驗（本地號碼，不含國家碼）
+    phone = req.phone.strip()
+    if not phone or not (5 <= len(phone) <= 15):
+        raise HTTPException(status_code=400, detail="手機號格式不正確")
+
+    # 5. 唯一性查重：郵箱
+    result = await db.execute(select(Member).where(Member.username == username))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="該郵箱已被註冊")
+    app_result = await db.execute(select(Application).where(Application.username == username))
+    if app_result.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="該郵箱已提交過申請，請登錄查看進度")
+
+    # 6. 唯一性查重：證件號
+    result = await db.execute(select(Member).where(Member.id_number == id_number))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="該證件號碼已被註冊")
+
+    # 7. 直接創建會員（註冊即會員，跳過審批）
+    now = datetime.now(timezone.utc)
+    member = Member(
+        username=username,
+        password_hash=hash_password(req.password),
+        real_name=req.real_name.strip(),
+        phone=phone,
+        phone_country_code=req.phone_country_code,
+        id_type=req.id_type,
+        id_number=id_number,
+        address=req.address,
+        tier="個人會員",
+        member_type="individual",
+        annual_fee=TIER_FEE.get("個人會員", 500),
+        is_active=True,
+        joined_at=now,
+        expires_at=now + timedelta(days=365),
+    )
+    db.add(member)
+    await db.commit()
+    await db.refresh(member)
+
+    # 8. 簽發 token（註冊即登錄）
+    token = create_access_token(data={"sub": str(member.id), "username": member.username, "role": "個人會員"})
+    return TokenResponse(access_token=token)

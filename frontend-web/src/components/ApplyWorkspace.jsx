@@ -100,7 +100,9 @@ const INITIAL_FORM = {
   username: "",
   password: "",
   applicant_name: "",
+  id_type: "mainland_id",
   id_number: "",
+  phone_country_code: "+853",
   applicant_phone: "",
   applicant_address: "",
   member_type: "",
@@ -229,7 +231,7 @@ export default function ApplyWorkspace({ onProgressChange }) {
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.username)) errs.username = "請輸入有效的郵箱格式";
       if (!formData.password || formData.password.length < 6) errs.password = "密碼至少 6 位";
       if (!formData.applicant_name) errs.applicant_name = "請輸入姓名";
-      if (!formData.id_number || formData.id_number.length < 15) errs.id_number = "請輸入有效證件號碼";
+      if (!formData.id_number || formData.id_number.length < 5) errs.id_number = "請輸入有效證件號碼";
       if (!formData.applicant_phone || formData.applicant_phone.length < 5) errs.applicant_phone = "請輸入聯絡電話";
       if (isEnterprise) {
         if (!formData.company_name) errs.company_name = "請輸入公司名稱";

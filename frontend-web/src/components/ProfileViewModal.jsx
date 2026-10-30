@@ -1,4 +1,11 @@
-﻿export default function ProfileViewModal({ profile, onClose }) {
+﻿const ID_TYPE_LABELS = {
+  mainland_id: "大陆身份证",
+  hkmo_pass: "港澳通行证",
+  macao_id: "澳门身份证",
+  passport: "护照",
+};
+
+export default function ProfileViewModal({ profile, onClose }) {
   const fileUrls = (() => {
     try {
       const raw = profile?.qualification_files;
@@ -21,7 +28,9 @@
         <div className="space-y-3 text-[14px]">
           <Row label="用戶名" value={profile?.username} />
           <Row label="真實姓名" value={profile?.real_name} />
-          <Row label="手機號" value={profile?.phone} />
+          <Row label="證件類型" value={ID_TYPE_LABELS[profile?.id_type] || profile?.id_type || "-"} />
+          <Row label="證件號碼" value={profile?.id_number || "-"} />
+          <Row label="手機號" value={profile?.phone ? `${profile.phone_country_code || ""} ${profile.phone}` : "-"} />
           <Row label="會員級別" value={profile?.tier || "-"} />
           <Row label="年費" value={profile?.annual_fee ? `${profile.annual_fee} 澳門元` : "-"} />
           <Row label="通訊地址" value={profile?.address || "-"} />

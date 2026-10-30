@@ -48,7 +48,7 @@ class ApplicationService:
         screener = ScreeningService(self.db)
         result = await screener.evaluate(app)
         await screener.perform_screening(app, "pass" if result["passed"] else "fail", "; ".join(result["reasons"]))
-        await self.db.flush()
+        await self.db.commit()
         return app
 
     async def get_application(self, app_id: uuid.UUID) -> Application:
@@ -83,7 +83,7 @@ class ApplicationService:
         if new_status == "待繳費":
             app.payment_proof_url = None
             app.payment_due_date = datetime.now(timezone.utc) + timedelta(days=7)
-        await self.db.flush()
+        await self.db.commit()
         return app
 
     async def verify_payment_and_create_member(self, app_id: uuid.UUID, verifier_id: uuid.UUID) -> dict:
@@ -103,15 +103,17 @@ class ApplicationService:
                 member.is_active = True
                 member.updated_at = datetime.now(timezone.utc)
                 app.status = "已入會"
-                await self.db.flush()
+                await self.db.commit()
                 return {"application_id": str(app.id), "member_id": str(member.id), "status": "已入會"}
 
         # New member flow: create member record
         member = Member(
             username=app.username,
             id_number=app.id_number,
+            id_type=app.id_type,
             real_name=app.applicant_name,
             phone=app.applicant_phone,
+            phone_country_code=app.phone_country_code,
             tier=app.requested_tier or "個人會員",
             password_hash=app.password_hash,
             annual_fee=TIER_FEE.get(app.requested_tier, 500),
@@ -128,7 +130,7 @@ class ApplicationService:
         await self.db.flush()
         app.member_id = member.id
         app.status = "已入會"
-        await self.db.flush()
+        await self.db.commit()
         return {"application_id": str(app.id), "member_id": str(member.id), "status": "已入會"}
 
     async def resubmit(self, app_id: uuid.UUID, updated_data: dict) -> Application:
@@ -153,9 +155,11 @@ class ApplicationService:
         new_data = {
             "username": old_username,
             "id_number": old_id_number,
+            "id_type": updated_data.get("id_type", old_app.id_type),
             "password_hash": old_app.password_hash,
             "applicant_name": updated_data.get("applicant_name", old_app.applicant_name),
             "applicant_phone": updated_data.get("applicant_phone", old_app.applicant_phone),
+            "phone_country_code": updated_data.get("phone_country_code", old_app.phone_country_code),
             "applicant_address": updated_data.get("applicant_address", old_app.applicant_address),
             "career_history": updated_data.get("career_history", old_app.career_history),
             "qualifications": updated_data.get("qualifications", old_app.qualifications),
@@ -168,7 +172,7 @@ class ApplicationService:
         screener = ScreeningService(self.db)
         result = await screener.evaluate(new_app)
         await screener.perform_screening(new_app, "pass" if result["passed"] else "fail", "; ".join(result["reasons"]))
-        await self.db.flush()
+        await self.db.commit()
         return new_app
 
 
@@ -187,7 +191,7 @@ class ApplicationService:
         for app in expired:
             app.status = "已過期"
         if expired:
-            await self.db.flush()
+            await self.db.commit()
         return len(expired)
 
     async def get_rejection_reason(self, app_id: uuid.UUID) -> dict:
@@ -201,21 +205,21 @@ class ApplicationService:
         app = await self.get_application(uuid.UUID(app_id))
         # Only allow editing certain fields
         editable = [
-            "applicant_name", "applicant_phone", "applicant_address",
+            "applicant_name", "applicant_phone", "phone_country_code", "id_type", "id_number", "applicant_address",
             "career_history", "qualifications", "qualification_files",
             "requested_tier", "member_type", "company_name", "business_reg_no", "status"
         ]
         for field in editable:
             if field in data and data[field] is not None:
                 setattr(app, field, data[field])
-        await self.db.flush()
+        await self.db.commit()
         return app
 
     async def delete_application(self, app_id: str) -> None:
         """??????"""
         app = await self.get_application(uuid.UUID(app_id))
         await self.db.delete(app)
-        await self.db.flush()
+        await self.db.commit()
 
     def _to_dict(self, app: Application) -> dict:
         return {
@@ -223,7 +227,9 @@ class ApplicationService:
             "username": app.username,
             "applicant_name": app.applicant_name,
             "applicant_phone": app.applicant_phone,
+            "phone_country_code": app.phone_country_code,
             "id_number": app.id_number,
+            "id_type": app.id_type,
             "applicant_address": app.applicant_address,
             "career_history": app.career_history,
             "qualifications": app.qualifications,

@@ -7,11 +7,32 @@ const MEMBER_TYPES = [
   { value: "高級會員", label: "高級會員", desc: "品牌展示權益，年費 5000 澳門元", fields: "enterprise" },
 ];
 
+const ID_TYPES = [
+  { value: "mainland_id", label: "大陆身份证" },
+  { value: "hkmo_pass", label: "港澳通行证" },
+  { value: "macao_id", label: "澳门身份证" },
+  { value: "passport", label: "护照" },
+];
+
+const COUNTRY_CODES = [
+  { value: "+853", label: "澳门 +853" },
+  { value: "+852", label: "香港 +852" },
+  { value: "+86", label: "大陆 +86" },
+];
+
 function fieldClass(hasError) {
   return [
     "w-full rounded-[7px] border bg-white/90 px-4 py-3 text-[15px] font-medium text-[#1b292b]",
     "placeholder:text-[#a0acaf] focus:outline-none focus:ring-2 focus:ring-[#006252]/30",
     "transition-colors",
+    hasError ? "border-red-400" : "border-[#cfd9d7]",
+  ].join(" ");
+}
+
+function selectClass(hasError) {
+  return [
+    "rounded-[7px] border bg-white/90 px-3 py-3 text-[15px] font-medium text-[#1b292b]",
+    "focus:outline-none focus:ring-2 focus:ring-[#006252]/30 transition-colors",
     hasError ? "border-red-400" : "border-[#cfd9d7]",
   ].join(" ");
 }
@@ -175,17 +196,31 @@ export default function BasicInfoForm({ data, onChange, errors }) {
               <ErrorText>{errors?.applicant_name}</ErrorText>
             </div>
             <div>
-              <Label required>證件號碼</Label>
-              <ConflictWarning>{conflicts.id_number}</ConflictWarning>
-              <input
-                className={fieldClass(errors?.id_number || conflicts.id_number)}
-                placeholder="身份證 / 護照號碼，15-18 位"
-                autoComplete="off"
-                value={data.id_number || ""}
-                onChange={(e) => set("id_number", e.target.value)}
-              />
-              <ErrorText>{errors?.id_number}</ErrorText>
+              <Label required>證件類型</Label>
+              <select
+                className={selectClass(errors?.id_type) + " w-full"}
+                value={data.id_type || "mainland_id"}
+                onChange={(e) => set("id_type", e.target.value)}
+              >
+                {ID_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+              <ErrorText>{errors?.id_type}</ErrorText>
             </div>
+          </div>
+
+          <div>
+            <Label required>證件號碼</Label>
+            <ConflictWarning>{conflicts.id_number}</ConflictWarning>
+            <input
+              className={fieldClass(errors?.id_number || conflicts.id_number)}
+              placeholder="請輸入證件號碼"
+              autoComplete="off"
+              value={data.id_number || ""}
+              onChange={(e) => set("id_number", e.target.value)}
+            />
+            <ErrorText>{errors?.id_number}</ErrorText>
           </div>
 
           {isEnterprise && (
@@ -217,13 +252,24 @@ export default function BasicInfoForm({ data, onChange, errors }) {
 
           <div>
             <Label required>聯絡電話</Label>
-            <input
-              className={fieldClass(errors?.applicant_phone)}
-              placeholder="可聯絡到本人的手機號碼"
-              autoComplete="off"
-              value={data.applicant_phone || ""}
-              onChange={(e) => set("applicant_phone", e.target.value)}
-            />
+            <div className="flex gap-3">
+              <select
+                className={selectClass(false) + " w-[130px] shrink-0"}
+                value={data.phone_country_code || "+853"}
+                onChange={(e) => set("phone_country_code", e.target.value)}
+              >
+                {COUNTRY_CODES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+              <input
+                className={fieldClass(errors?.applicant_phone)}
+                placeholder="手機號碼"
+                autoComplete="off"
+                value={data.applicant_phone || ""}
+                onChange={(e) => set("applicant_phone", e.target.value)}
+              />
+            </div>
             <ErrorText>{errors?.applicant_phone}</ErrorText>
           </div>
 

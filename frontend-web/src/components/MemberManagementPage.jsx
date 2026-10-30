@@ -68,6 +68,16 @@ function maskPhone(phone) {
   return phone.slice(0, 4) + "****";
 }
 
+function idTypeLabel(idType) {
+  const map = {
+    mainland_id: "大陆身份证",
+    hkmo_pass: "港澳通行证",
+    macao_id: "澳门身份证",
+    passport: "护照",
+  };
+  return map[idType] || idType || "-";
+}
+
 function formatDate(iso) {
   if (!iso) return "-";
   const d = new Date(iso);
@@ -92,8 +102,9 @@ const MEMBER_FIELD_GROUPS = [
     fields: [
       { key: "real_name",   label: "姓名" },
       { key: "username",    label: "用户名" },
-      { key: "id_number",   label: "身份证", render: maskId },
-      { key: "phone",       label: "手机",   render: maskPhone },
+      { key: "id_type",     label: "證件類型", render: idTypeLabel },
+      { key: "id_number",   label: "證件號碼", render: maskId },
+      { key: "phone",       label: "手机",   render: (v, item) => `${item?.phone_country_code || ""} ${maskPhone(v)}` },
       { key: "address",     label: "地址" },
     ],
   },
@@ -138,8 +149,9 @@ const APP_FIELD_GROUPS = [
     fields: [
       { key: "applicant_name", label: "姓名" },
       { key: "username",       label: "用戶名" },
-      { key: "id_number",      label: "身份證", render: maskId },
-      { key: "applicant_phone",label: "手機" },
+      { key: "id_type",        label: "證件類型", render: idTypeLabel },
+      { key: "id_number",      label: "證件號碼", render: maskId },
+      { key: "applicant_phone",label: "手機", render: (v, item) => `${item?.phone_country_code || ""} ${v || "-"}` },
       { key: "applicant_address", label: "地址" },
     ],
   },
@@ -201,26 +213,24 @@ export default function MemberManagementPage() {
 
   const isAppTab = APP_TABS.some(t => t.key === activeTab);
 
-  // Load counts on mount
+  // 拉取申請數據並更新客戶端緩存（allApps）與各 tab 計數
   const [appCounts, setAppCounts] = useState({});
-  useEffect(() => {
-    async function loadCounts() {
-      try {
-        const res = await fetch(APPS_API + "?page_size=500", { headers: authHeaders });
-        if (res.ok) {
-          const data = await res.json();
-          const items = data.items || [];
-          const counts = {};
-          APP_TABS.forEach(t => {
-            counts[t.key] = items.filter(a => a.status === t.key).length;
-          });
-          setAppCounts(counts);
-          setAllApps(items); // cache for client-side filter
-        }
-      } catch {}
-    }
-    loadCounts();
-  }, []);
+  async function refreshApps() {
+    try {
+      const res = await fetch(APPS_API + "?page_size=500", { headers: authHeaders });
+      if (res.ok) {
+        const data = await res.json();
+        const items = data.items || [];
+        const counts = {};
+        APP_TABS.forEach(t => {
+          counts[t.key] = items.filter(a => a.status === t.key).length;
+        });
+        setAppCounts(counts);
+        setAllApps(items); // cache for client-side filter
+      }
+    } catch {}
+  }
+  useEffect(() => { refreshApps(); }, []); // 首次掛載載入
 
   async function fetchData() {
     setLoading(true);
@@ -336,7 +346,7 @@ export default function MemberManagementPage() {
     try {
       const res = await fetch(`${APPS_API}/${appId}`, { method: "DELETE", headers: authHeaders });
       if (!res.ok) { const d = await res.json().catch(()=>({})); throw new Error(d.detail || "刪除失敗"); }
-      setMsg("已刪除"); fetchData();
+      setMsg("已刪除"); refreshApps(); // 重新拉取申請，即時從緩存移除已刪記錄
     } catch(e) { setMsg(e.message); }
   }
   const displayData = isAppTab ? appFiltered : memberFiltered;

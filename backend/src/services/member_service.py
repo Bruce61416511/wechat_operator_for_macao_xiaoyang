@@ -32,23 +32,23 @@ class MemberService:
         return result.scalar_one_or_none()
 
     async def update_member(self, member: Member, data: dict) -> Member:
-        allowed_fields = {"phone", "real_name", "address", "career_history", "qualifications", "qualification_files", "member_type", "company_name", "business_reg_no"}
+        allowed_fields = {"phone", "phone_country_code", "id_type", "id_number", "real_name", "address", "career_history", "qualifications", "qualification_files", "member_type", "company_name", "business_reg_no"}
         for k, v in data.items():
             if k in allowed_fields and v is not None:
                 setattr(member, k, v)
         member.updated_at = datetime.now(timezone.utc)
         self._audit_log("update", member.id, data)
-        await self.db.flush()
+        await self.db.commit()
         return member
 
     async def update_by_staff(self, member: Member, data: dict) -> Member:
-        staff_fields = {"phone", "real_name", "tier", "annual_fee", "is_active", "member_type", "company_name", "business_reg_no", "company_logo_url", "brand_description", "is_featured", "featured_expires_at"}
+        staff_fields = {"phone", "phone_country_code", "id_type", "id_number", "real_name", "tier", "annual_fee", "is_active", "member_type", "company_name", "business_reg_no", "company_logo_url", "brand_description", "is_featured", "featured_expires_at"}
         for k, v in data.items():
             if k in staff_fields and v is not None:
                 setattr(member, k, v)
         member.updated_at = datetime.now(timezone.utc)
         self._audit_log("staff_update", member.id, data)
-        await self.db.flush()
+        await self.db.commit()
         return member
 
     async def list_members(self, tier: str | None = None, member_type: str | None = None, status: str | None = None, page: int = 1, page_size: int = 20) -> dict:
@@ -71,7 +71,7 @@ class MemberService:
             return {"error": "not_found"}
         member.is_active = False
         self._audit_log("deactivate", member_id, {})
-        await self.db.flush()
+        await self.db.commit()
         return {"id": str(member.id), "status": "已停用"}
 
     async def hard_delete(self, member_id) -> dict:
@@ -82,7 +82,7 @@ class MemberService:
             return {"error": "cannot_delete_active"}
         await self.db.delete(member)
         self._audit_log("hard_delete", member_id, {})
-        await self.db.flush()
+        await self.db.commit()
         return {"id": str(member_id), "status": "已刪除"}
 
     async def force_delete(self, member_id) -> dict:
@@ -94,7 +94,7 @@ class MemberService:
             app = r.scalar_one_or_none()
             if app:
                 await self.db.delete(app)
-                await self.db.flush()
+                await self.db.commit()
                 return {"id": str(member_id), "status": "已刪除", "note": "僅刪除了關聯申請記錄"}
             return {"error": "not_found"}
         from ..models.application import Application
@@ -105,7 +105,7 @@ class MemberService:
             await self.db.delete(app)
         await self.db.delete(member)
         self._audit_log("force_delete", member_id, {})
-        await self.db.flush()
+        await self.db.commit()
         return {"id": str(member_id), "status": "已刪除"}
 
     async def auto_update_status(self) -> int:
@@ -117,7 +117,7 @@ class MemberService:
             m.is_active = False
             logger.info(f"MEMBER-EXPIRED | id={m.id} | tier={m.tier} | expired_at={m.expires_at}")
         if expired:
-            await self.db.flush()
+            await self.db.commit()
         return len(expired)
         members = result.scalars().all()
 
@@ -132,7 +132,7 @@ class MemberService:
         member.is_active = True
         member.updated_at = now
         self._audit_log("renew", member.id, {"new_expires_at": member.expires_at.isoformat()})
-        await self.db.flush()
+        await self.db.commit()
         return {"id": str(member.id), "expires_at": member.expires_at.isoformat(), "is_active": member.is_active}
         return count
 
@@ -161,8 +161,10 @@ class MemberService:
         app = Application(
             username=temp_username,
             id_number=temp_idnum,
+            id_type=data.get("id_type", member.id_type),
             applicant_name=data.get("applicant_name", member.real_name),
             applicant_phone=data.get("applicant_phone", member.phone),
+            phone_country_code=data.get("phone_country_code", member.phone_country_code),
             applicant_address=data.get("applicant_address", ""),
             career_history=data.get("career_history", ""),
             qualifications=data.get("qualifications", ""),
@@ -192,7 +194,7 @@ class MemberService:
             await self.db.flush()
             app.status = "待繳費"
             app.payment_due_date = datetime.now(timezone.utc) + timedelta(days=7)
-            await self.db.flush()
+            await self.db.commit()
             self._audit_log("tier_change_pending", member.id, {"from": member.tier, "to": requested_tier})
             return {"application_id": str(app.id), "status": app.status, "message": "等級變更需繳納年費，會員狀態已暫停"}
         else:
@@ -207,7 +209,7 @@ class MemberService:
             app.final_review_result = "信息變更-自動通過"
             await self.db.flush()
             app.status = "已入會"
-            await self.db.flush()
+            await self.db.commit()
             self._audit_log("info_update", member.id, {"fields": ["real_name", "phone", "member_type", "company_name"]})
             return {"application_id": str(app.id), "status": app.status, "message": "信息修改已生效"}
 
@@ -216,8 +218,10 @@ class MemberService:
             "id": str(m.id),
             "username": m.username,
             "id_number": m.id_number,
+            "id_type": m.id_type,
             "real_name": m.real_name,
             "phone": m.phone,
+            "phone_country_code": m.phone_country_code,
             "tier": m.tier,
             "member_type": m.member_type,
             "annual_fee": m.annual_fee,
@@ -246,8 +250,10 @@ class MemberService:
             "id": str(m.id),
             "username": m.username,
             "id_number": m.id_number,
+            "id_type": m.id_type,
             "real_name": m.real_name,
             "phone": m.phone[:7] + "****" if m.phone else None,
+            "phone_country_code": m.phone_country_code,
             "tier": m.tier,
             "member_type": m.member_type,
             "annual_fee": m.annual_fee,

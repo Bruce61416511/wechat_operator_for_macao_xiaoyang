@@ -92,6 +92,9 @@ router = APIRouter(prefix="/v1/members", tags=["members"])
 
 class MemberUpdate(BaseModel):
     phone: str | None = None
+    phone_country_code: str | None = None
+    id_type: str | None = None
+    id_number: str | None = None
     real_name: str | None = None
     address: str | None = None
     career_history: str | None = None
@@ -111,6 +114,9 @@ class MemberUpdate(BaseModel):
 
 class StaffMemberUpdate(BaseModel):
     phone: str | None = None
+    phone_country_code: str | None = None
+    id_type: str | None = None
+    id_number: str | None = None
     real_name: str | None = None
     tier: str | None = None
     annual_fee: int | None = None
@@ -337,6 +343,9 @@ class AdminMemberUpdate(BaseModel):
     username: str | None = None
     real_name: str | None = None
     phone: str | None = None
+    phone_country_code: str | None = None
+    id_type: str | None = None
+    id_number: str | None = None
     tier: str | None = None
     annual_fee: int | None = None
     is_active: bool | None = None
@@ -470,6 +479,8 @@ async def admin_delete_application(
 class ApplicationAdminUpdate(BaseModel):
     applicant_name: str | None = None
     applicant_phone: str | None = None
+    phone_country_code: str | None = None
+    id_type: str | None = None
     applicant_address: str | None = None
     career_history: str | None = None
     qualifications: str | None = None
@@ -525,8 +536,10 @@ async def admin_list_applications(
             "id": app.get("id"),
             "username": uname,
             "id_number": idnum,
+            "id_type": app.get("id_type", "mainland_id"),
             "applicant_name": app.get("applicant_name", ""),
             "applicant_phone": app.get("applicant_phone", ""),
+            "phone_country_code": app.get("phone_country_code", "+853"),
             "status": app.get("status", ""),
             "requested_tier": app.get("requested_tier", ""),
             "submitted_at": app.get("submitted_at"),
@@ -582,8 +595,10 @@ async def admin_applications_summary(
                 "id": str(app.id),
                 "username": uname,
                 "id_number": idnum,
+                "id_type": app.id_type or "mainland_id",
                 "applicant_name": app.applicant_name or "",
                 "applicant_phone": app.applicant_phone or "",
+                "phone_country_code": app.phone_country_code or "+853",
                 "status": status,
                 "requested_tier": app.requested_tier or "",
                 "submitted_at": app.submitted_at.isoformat() if app.submitted_at else None,
