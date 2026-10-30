@@ -355,10 +355,11 @@ export default function MemberManagementPage() {
     <main className="min-h-screen bg-[#f8fbf9] pl-[240px] text-[#004f46]">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#dbe6e4] bg-white px-8 py-5">
-        <div>
-          <h1 className="text-[24px] font-bold">會員管理</h1>
-          <p className="mt-0.5 text-[13px] text-[#8ba09c]">管理已入會會員與申請中記錄</p>
-        </div>
+      <div>
+        <a href="/member" className="inline-flex items-center gap-1 mb-2 text-[13px] font-medium text-[#006252] hover:underline">← 返回會員中心</a>
+        <h1 className="text-[24px] font-bold">會員管理</h1>
+        <p className="mt-0.5 text-[13px] text-[#8ba09c]">管理已入會會員與申請中記錄</p>
+      </div>
         <span className="rounded-full bg-[#e7f5f0] px-4 py-1.5 text-[13px] font-semibold text-[#006252]">
           共 {totalCount} 筆
         </span>

@@ -704,7 +704,10 @@ export default function MemberPage() {
         <div className="mt-4 grid grid-cols-[1fr_380px] items-stretch gap-4">
           <div className="flex h-full flex-col gap-4">
             {user?.role === "root" ? (
-              <RootDashboard />
+              <>
+                <MemberHero profile={profile} onUpdateProfile={() => setShowUpdateModal(true)} onPayment={() => setShowPayment(true)} />
+                <RootDashboard />
+              </>
             ) : (
               <>
             <div className="grid grid-cols-[1fr_344px] gap-4">
