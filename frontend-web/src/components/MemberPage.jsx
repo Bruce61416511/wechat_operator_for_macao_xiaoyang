@@ -10,6 +10,7 @@ import ResourceManagementPanel from "./ResourceManagementPanel.jsx"
 import RootDashboard from "./RootDashboard.jsx"
 const sidebarItems = [
   { label: '會員中心', active: true, icon: HomeIcon },
+  { label: '我的資料', icon: IdIcon },
   { label: '公告管理', icon: BellIcon, adminOnly: true },
   { label: '資料中心', icon: FolderIcon },
   { label: '我的權益', icon: ShieldIcon },
@@ -225,7 +226,7 @@ function MemberSidebar({ onViewProfile, onShowBenefits, unreadCount, onOpenNotif
               ].join(' ')}
               key={item.label}
               type="button"
-              onClick={function() { if (item.label === "資料中心") onShowResourceCenter(); else if (item.label === "公告管理") window.location.href = "/admin/announcements"; else if (item.label === "協會活動") window.location.href = "/events"; else if (item.label === "會員終審") window.location.href = "/admin/final-review"; else if (item.label === "繳費審批") window.location.href = "/admin/payment-approval"; else if (item.label === "會員管理") window.location.href = "/admin/members"; else if (item.label === "章程管理") window.location.href = "/admin/constitution"; else if (item.label === "消息通知") onOpenNotifications(); else if (item.label === "我的權益") onShowBenefits(); }}
+              onClick={function() { if (item.label === "我的資料") onViewProfile(); else if (item.label === "資料中心") onShowResourceCenter(); else if (item.label === "公告管理") window.location.href = "/admin/announcements"; else if (item.label === "協會活動") window.location.href = "/events"; else if (item.label === "會員終審") window.location.href = "/admin/final-review"; else if (item.label === "繳費審批") window.location.href = "/admin/payment-approval"; else if (item.label === "會員管理") window.location.href = "/admin/members"; else if (item.label === "章程管理") window.location.href = "/admin/constitution"; else if (item.label === "消息通知") onOpenNotifications(); else if (item.label === "我的權益") onShowBenefits(); }}
             >
               <Icon />
               <span className="flex-1 text-left">{item.label}</span>
@@ -704,10 +705,7 @@ export default function MemberPage() {
         <div className="mt-4 grid grid-cols-[1fr_380px] items-stretch gap-4">
           <div className="flex h-full flex-col gap-4">
             {user?.role === "root" ? (
-              <>
-                <MemberHero profile={profile} onUpdateProfile={() => setShowUpdateModal(true)} onPayment={() => setShowPayment(true)} />
-                <RootDashboard />
-              </>
+              <RootDashboard />
             ) : (
               <>
             <div className="grid grid-cols-[1fr_344px] gap-4">

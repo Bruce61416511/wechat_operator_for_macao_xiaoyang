@@ -15,6 +15,7 @@ function ChevronIcon({ open }) {
 
 /* ── Helpers ────────────────────────────── */
 const MEMBER_TABS = ["全部會員", "個人會員", "企業會員", "高級會員", "理事"];
+const ROOT_USERNAME = "root@macaolive.org"; // root 管理員賬號，後台不提供行內操作按鈕
 const APP_TABS = [
   { key: "初審通過",   label: "初審通過" },
   { key: "初審不通過", label: "初審不通過" },
@@ -465,7 +466,7 @@ export default function MemberManagementPage() {
                         )}
                         <td className="px-4 py-3.5">
                           <div className="flex items-center justify-center gap-3" onClick={e => e.stopPropagation()}>
-                            {!isAppTab && (
+                            {!isAppTab && item.username !== ROOT_USERNAME && (
                               <>
                                 <button onClick={() => openEdit(item)} className="text-[#006252] text-[13px] font-semibold hover:underline">編輯</button>
                                 <button onClick={() => handleDelete(item.id)} className="text-[#c53030] text-[13px] font-semibold hover:underline">刪除</button>
