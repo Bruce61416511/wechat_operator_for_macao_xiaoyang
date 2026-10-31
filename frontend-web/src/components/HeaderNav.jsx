@@ -10,8 +10,6 @@ const menuItems = [
   '幫助中心',
 ];
 
-const languages = ['繁中', 'Português', 'EN'];
-
 function LogoPlaceholder() {
   return (
     <a className="block" href="#" aria-label="澳門直播協會 · 小揚同學">
@@ -59,7 +57,7 @@ function UserMenu() {
   if (!user) return null;
 
   return (
-    <div className="relative ml-4" ref={ref}>
+    <div className="relative ml-auto" ref={ref}>
       <button
         className="flex items-center gap-2 cursor-pointer"
         onClick={() => setOpen(!open)}
@@ -78,27 +76,6 @@ function UserMenu() {
     </div>
   );
 }
-function LanguageSwitch() {
-  return (
-    <div className="ml-auto flex h-full items-center whitespace-nowrap text-[13.5px] font-semibold leading-none tracking-normal text-[#555f68]">
-      {languages.map((language, index) => (
-        <span className="flex items-center" key={language}>
-          <button
-            className={[
-              'px-[9px] transition-colors hover:text-[#004f46]',
-              language === '繁中' ? 'font-semibold text-[#005d50]' : '',
-            ].join(' ')}
-            type="button"
-          >
-            {language}
-          </button>
-          {index < languages.length - 1 ? <span className="text-[#8b9298]">/</span> : null}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 export default function HeaderNav() {
   const currentPath = window.location.pathname;
 
@@ -131,7 +108,6 @@ export default function HeaderNav() {
           </nav>
 
           <div className="hidden h-full flex-1 items-center xl:flex">
-            <LanguageSwitch />
             <UserMenu />
           </div>
 

@@ -1,6 +1,16 @@
 ﻿import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 
+function getRole() {
+  try {
+    const token = sessionStorage.getItem("token");
+    if (!token) return null;
+    return JSON.parse(atob(token.split(".")[0])).role;
+  } catch {
+    return null;
+  }
+}
+
 export default function LoginPage() {
   const { login, isAuthenticated } = useAuth();
   const [username, setUsername] = useState("");
@@ -10,15 +20,20 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      const params = new URLSearchParams(window.location.search);
-      window.location.href = params.get("redirect") || "/member";
+      const role = getRole();
+      if (role === "root" || role === "admin") {
+        window.location.href = "/admin/members";
+      } else {
+        // 非管理員誤用後台登錄頁，導向會員中心
+        window.location.href = "/member";
+      }
     }
   }, [isAuthenticated]);
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!username.trim() || !password) {
-      setError("請輸入郵箱和密碼");
+      setError("請輸入管理員賬號和密碼");
       return;
     }
     setSubmitting(true);
@@ -32,31 +47,31 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#f8fbfb] px-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#0f1f1c] px-6">
       <div className="mb-8 text-center">
         <div className="mx-auto mb-4 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gradient-to-br from-[#00836f] to-[#006252] text-[36px] shadow-[0_8px_24px_rgba(0,93,80,0.25)]">
-          🺧
+          🛡
         </div>
-        <h1 className="font-serifCn text-[28px] font-bold text-[#004f46]">小揚同學</h1>
-        <p className="mt-1 text-[13px] text-[#6c777b]">澳門直播協會 · 會員登錄</p>
+        <h1 className="font-serifCn text-[28px] font-bold text-white">澳門直播協會</h1>
+        <p className="mt-1 text-[13px] text-[#9fb4af]">管理後台 · 員工專用</p>
       </div>
 
-      <div className="w-full max-w-[380px] rounded-[16px] border border-[#dce6e4] bg-white p-6 shadow-[0_2px_20px_rgba(44,36,32,0.06)]">
+      <div className="w-full max-w-[380px] rounded-[16px] border border-[#1f3a35] bg-[#14211e] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="mb-1 block text-[13px] font-medium text-[#6b5e58]">郵箱地址</label>
+            <label className="mb-1 block text-[13px] font-medium text-[#9fb4af]">管理員賬號（郵箱）</label>
             <input
-              className="w-full rounded-[10px] border border-[#dce6e4] bg-[#fdfcfa] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#00836f] focus:bg-white"
-              placeholder="請輸入郵箱地址"
+              className="w-full rounded-[10px] border border-[#1f3a35] bg-[#0f1f1c] px-4 py-2.5 text-[14px] text-white outline-none transition focus:border-[#00836f] focus:bg-[#14211e]"
+              placeholder="請輸入管理員郵箱"
               autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
           </div>
           <div className="mb-4">
-            <label className="mb-1 block text-[13px] font-medium text-[#6b5e58]">密碼</label>
+            <label className="mb-1 block text-[13px] font-medium text-[#9fb4af]">密碼</label>
             <input
-              className="w-full rounded-[10px] border border-[#dce6e4] bg-[#fdfcfa] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#00836f] focus:bg-white"
+              className="w-full rounded-[10px] border border-[#1f3a35] bg-[#0f1f1c] px-4 py-2.5 text-[14px] text-white outline-none transition focus:border-[#00836f] focus:bg-[#14211e]"
               type="password"
               placeholder="請輸入密碼"
               autoComplete="current-password"
@@ -70,20 +85,18 @@ export default function LoginPage() {
             type="submit"
             disabled={submitting}
           >
-            {submitting ? "登錄中..." : "登 錄"}
+            {submitting ? "登錄中..." : "登 錄 後 台"}
           </button>
 
           {error && (
-            <div className="mt-3 rounded-[10px] bg-[#fdf0eb] px-4 py-2.5 text-center text-[13px] text-[#c86a4a]">
+            <div className="mt-3 rounded-[10px] bg-[#3a1f1a] px-4 py-2.5 text-center text-[13px] text-[#e08a6a]">
               {error}
             </div>
           )}
         </form>
       </div>
 
-      <p className="mt-4 text-[13px] text-[#6b5e58]">
-        還沒有賬號？<a className="font-medium text-[#00836f] hover:underline" href="/apply">申請入會</a>
-      </p>
+      <p className="mt-4 text-[13px] text-[#6f8480]">本頁僅供協會管理人員登錄，會員請使用會員登錄入口</p>
     </div>
   );
 }

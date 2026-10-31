@@ -4,6 +4,11 @@ function getToken() {
   return sessionStorage.getItem("token");
 }
 
+function redirectToLogin() {
+  const isAdmin = window.location.pathname.startsWith("/admin");
+  window.location.href = isAdmin ? "/login" : "/member/login";
+}
+
 function setToken(token) {
   if (token) sessionStorage.setItem("token", token);
   else sessionStorage.removeItem("token");
@@ -19,7 +24,7 @@ async function request(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   if (res.status === 401) {
     setToken(null);
-    window.location.href = "/login";
+    redirectToLogin();
     throw new Error("未登錄");
   }
   const data = await res.json().catch(() => null);
@@ -42,7 +47,7 @@ export async function login(username, password) {
 
 export function logout() {
   setToken(null);
-  window.location.href = "/login";
+  redirectToLogin();
 }
 
 export function isAuthenticated() {

@@ -1,7 +1,6 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { getMyProfile } from "../services/api.js";
 import UpdateProfileModal from "./UpdateProfileModal.jsx";
-import ProfileViewModal from "./ProfileViewModal.jsx";
 import BenefitsModal from "./BenefitsModal.jsx";
 import PaymentModal from "./PaymentModal.jsx";
 import { useAuth } from "../contexts/AuthContext";
@@ -9,8 +8,7 @@ import NotificationModal from "./NotificationModal.jsx"
 import ResourceManagementPanel from "./ResourceManagementPanel.jsx"
 import RootDashboard from "./RootDashboard.jsx"
 const sidebarItems = [
-  { label: '會員中心', active: true, icon: HomeIcon },
-  { label: '我的資料', icon: IdIcon },
+  { label: '會員中心', icon: HomeIcon },
   { label: '公告管理', icon: BellIcon, adminOnly: true },
   { label: '資料中心', icon: FolderIcon },
   { label: '我的權益', icon: ShieldIcon },
@@ -63,10 +61,6 @@ function HomeIcon() {
 
 function ShieldIcon() {
   return <PathIcon d="M12 3.5 19 6.7v5.1c0 4.7-2.5 7.9-7 9.7-4.5-1.8-7-5-7-9.7V6.7z" />;
-}
-
-function ShieldCheckOutlineIcon() {
-  return <OutlineIcon><path d="M12 3.5 19 6.7v5.1c0 4.7-2.5 7.9-7 9.7-4.5-1.8-7-5-7-9.7V6.7z" /><path d="m8.7 12 2.2 2.2 4.5-5" /></OutlineIcon>;
 }
 
 function CalendarIcon() {
@@ -201,7 +195,7 @@ function OutlineIcon({ children, className = 'h-6 w-6' }) {
   );
 }
 
-function MemberSidebar({ onViewProfile, onShowBenefits, unreadCount, onOpenNotifications, onShowResourceCenter }) {
+function MemberSidebar({ onShowBenefits, unreadCount, onOpenNotifications, onShowResourceCenter, onShowDashboard, activeSection }) {
   const { user } = useAuth();
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-[240px] flex-col overflow-hidden bg-[linear-gradient(180deg,#00463d_0%,#005548_45%,#003f37_100%)] px-3 py-8 text-white shadow-[12px_0_30px_rgba(0,45,40,0.2)]">
@@ -218,15 +212,16 @@ function MemberSidebar({ onViewProfile, onShowBenefits, unreadCount, onOpenNotif
         {sidebarItems.filter(item => !item.adminOnly || (user?.role === 'root')).map((item) => {
           const Icon = item.icon;
           const badge = item.label === '消息通知' ? unreadCount : item.badge;
+          const isActive = item.label === '會員中心' ? activeSection === 'dashboard' : item.label === '資料中心' ? activeSection === 'resources' : false;
           return (
             <button
               className={[
                 'flex h-[48px] w-full items-center gap-4 rounded-[14px] px-5 text-[16px] font-semibold transition',
-                item.active ? 'bg-white/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]' : 'text-white/82 hover:bg-white/10',
+                isActive ? 'bg-white/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]' : 'text-white/82 hover:bg-white/10',
               ].join(' ')}
               key={item.label}
               type="button"
-              onClick={function() { if (item.label === "我的資料") onViewProfile(); else if (item.label === "資料中心") onShowResourceCenter(); else if (item.label === "公告管理") window.location.href = "/admin/announcements"; else if (item.label === "協會活動") window.location.href = "/events"; else if (item.label === "會員終審") window.location.href = "/admin/final-review"; else if (item.label === "繳費審批") window.location.href = "/admin/payment-approval"; else if (item.label === "會員管理") window.location.href = "/admin/members"; else if (item.label === "章程管理") window.location.href = "/admin/constitution"; else if (item.label === "消息通知") onOpenNotifications(); else if (item.label === "我的權益") onShowBenefits(); }}
+              onClick={function() { if (item.label === "資料中心") onShowResourceCenter(); else if (item.label === "公告管理") window.location.href = "/admin/announcements"; else if (item.label === "協會活動") window.location.href = "/events"; else if (item.label === "會員終審") window.location.href = "/admin/final-review"; else if (item.label === "繳費審批") window.location.href = "/admin/payment-approval"; else if (item.label === "會員管理") window.location.href = "/admin/members"; else if (item.label === "章程管理") window.location.href = "/admin/constitution"; else if (item.label === "消息通知") onOpenNotifications(); else if (item.label === "會員中心") onShowDashboard(); else if (item.label === "我的權益") onShowBenefits(); }}
             >
               <Icon />
               <span className="flex-1 text-left">{item.label}</span>
@@ -266,15 +261,6 @@ function MemberTopBar({ profile, dropdownOpen, setDropdownOpen, dropdownRef, onL
       <header className="sticky top-0 z-30 flex h-[96px] items-center justify-between bg-white/72 px-11 backdrop-blur-xl">
         <h1 className="font-serifCn text-[34px] font-semibold leading-none text-[#00473f]">會員中心 － 小揚同學與你同行</h1>
         <div className="flex items-center gap-8 text-[#285c55]">
-          <div className="flex items-center gap-2 text-[14px] font-semibold">
-            <ShieldCheckOutlineIcon />
-            權威認證 · 值得信賴
-          </div>
-          <div className="flex items-center gap-5 text-[14px] font-semibold">
-            <span className="rounded-full bg-[#006252] px-4 py-2 text-white">繁體</span>
-            <span>EN</span>
-            <span>PT</span>
-          </div>
           <div className="relative" ref={dropdownRef}>
             <button
               className="flex items-center gap-3 cursor-pointer"
@@ -398,7 +384,7 @@ function MemberTopBar({ profile, dropdownOpen, setDropdownOpen, dropdownRef, onL
           </p>
           <p className="flex items-center gap-3">
             <span className="text-[#9ddfcd]"><CalendarIcon /></span>
-            會費到期：{profile?.annual_fee === 0 ? "永久生效" : profile?.is_active ? yearEnd : "-"}
+            會費到期：{profile?.annual_fee === 0 || !profile?.expires_at ? "永久生效" : profile?.is_active ? yearEnd : "-"}
           </p>
           <p className="flex items-center gap-3">
             <span className="text-[#9ddfcd]"><GiftIcon /></span>
@@ -643,12 +629,92 @@ function ContactCard() {
   );
 }
 
+function MemberInfoView({ profile, onUpdateProfile, onPayment }) {
+  const fileUrls = (() => {
+    try {
+      const raw = profile?.qualification_files;
+      if (!raw) return [];
+      return typeof raw === "string" ? JSON.parse(raw) : raw;
+    } catch { return []; }
+  })();
+
+  const idLabel = {
+    mainland_id: "大陆身份证",
+    hkmo_pass: "港澳通行证",
+    macao_id: "澳门身份证",
+    passport: "护照",
+  };
+
+  function InfoRow({ label, value }) {
+    return (
+      <div className="flex justify-between items-center py-2.5 border-b border-[#eef3f2] last:border-b-0">
+        <span className="text-[#6a7679] text-[14px] shrink-0">{label}</span>
+        <span className="font-medium text-[#1b292b] text-[14px] text-right max-w-[62%] break-words">{value || "-"}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-[860px] mx-auto">
+      <div className="rounded-[14px] border border-[#dbe6e4] bg-white p-6 shadow-[0_10px_24px_rgba(42,72,76,0.1)]">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-[20px] font-bold text-[#004f46]">我的資料</h2>
+          <div className="flex gap-2">
+            <button onClick={onPayment} type="button" className="rounded-full bg-[#fdf0eb] px-4 py-2 text-[13px] font-semibold text-[#c86a4a] hover:bg-[#fbe3da] transition">續費</button>
+            <button onClick={onUpdateProfile} type="button" className="rounded-full bg-[#006252] px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#005347] transition">更新資料</button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10">
+          <div>
+            <InfoRow label="用戶名" value={profile?.username} />
+            <InfoRow label="真實姓名" value={profile?.real_name} />
+            <InfoRow label="證件類型" value={idLabel[profile?.id_type] || profile?.id_type} />
+            <InfoRow label="證件號碼" value={profile?.id_number} />
+            <InfoRow label="手機號" value={profile?.phone ? `${profile.phone_country_code || ""} ${profile.phone}` : null} />
+          </div>
+          <div>
+            <InfoRow label="會員級別" value={profile?.tier} />
+            <InfoRow label="年費" value={profile?.annual_fee ? `${profile.annual_fee} 澳門元` : null} />
+            <InfoRow label="狀態" value={profile?.is_active ? "有效" : "已停用"} />
+            <InfoRow label="通訊地址" value={profile?.address} />
+            <InfoRow label="註冊時間" value={profile?.created_at ? new Date(profile.created_at).toLocaleDateString("zh-CN") : null} />
+          </div>
+        </div>
+
+        {profile?.career_history && (
+          <div className="mt-4 pt-4 border-t border-[#eef3f2]">
+            <span className="text-[#6a7679] text-[13px]">從業經歷</span>
+            <p className="mt-1 text-[#1b292b] font-medium whitespace-pre-wrap">{profile.career_history}</p>
+          </div>
+        )}
+        {profile?.qualifications && (
+          <div className="mt-4 pt-4 border-t border-[#eef3f2]">
+            <span className="text-[#6a7679] text-[13px]">資質說明</span>
+            <p className="mt-1 text-[#1b292b] font-medium whitespace-pre-wrap">{profile.qualifications}</p>
+          </div>
+        )}
+        {fileUrls.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-[#eef3f2]">
+            <span className="text-[#6a7679] text-[13px]">資質文件</span>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {fileUrls.map((url, i) => (
+                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block">
+                  <img src={url} alt={`資質 ${i + 1}`} className="w-full h-28 object-cover rounded-[4px] border border-[#dde7e5] hover:opacity-80 transition" />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function MemberPage() {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [showProfileModal, setShowProfileModal] = useState(false);
   const [showBenefits, setShowBenefits] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [feedItems, setFeedItems] = useState([]);
@@ -688,7 +754,7 @@ export default function MemberPage() {
 
   return (
     <main className="min-h-screen bg-[#f8fbf9] bg-[radial-gradient(circle_at_80%_0%,rgba(224,241,238,0.55),transparent_36%)] pl-[240px] text-[#004f46]">
-      <MemberSidebar onViewProfile={() => setShowProfileModal(true)} onShowBenefits={() => setShowBenefits(true)} unreadCount={unreadCount} onOpenNotifications={() => setShowNotifications(true)} onShowResourceCenter={() => { setActiveSection("resources"); }} />
+      <MemberSidebar onShowBenefits={() => setShowBenefits(true)} unreadCount={unreadCount} onOpenNotifications={() => setShowNotifications(true)} onShowResourceCenter={() => { setActiveSection("resources"); }} onShowDashboard={() => setActiveSection("dashboard")} activeSection={activeSection} />
       <MemberTopBar
         profile={profile}
         dropdownOpen={dropdownOpen}
@@ -701,31 +767,25 @@ export default function MemberPage() {
 
       {activeSection === "dashboard" && (
         <div className="w-full px-3 pb-8">
-        <MemberHero profile={profile} onUpdateProfile={() => setShowUpdateModal(true)} onPayment={() => setShowPayment(true)} />
-        <div className="mt-4 grid grid-cols-[1fr_380px] items-stretch gap-4">
-          <div className="flex h-full flex-col gap-4">
-            {user?.role === "root" ? (
-              <RootDashboard />
-            ) : (
-              <>
-            <div className="grid grid-cols-[1fr_344px] gap-4">
-              {(user?.role !== "root") && <RecentUpdates items={feedItems} onViewAll={function() { fetch("/v1/members/me/feed?limit=50", { headers: { Authorization: "Bearer " + sessionStorage.getItem("token") } }).then(function(r) { return r.json(); }).then(function(d) { setAllFeedItems(d.items || []); setShowFeedAll(true); }).catch(function() {}); }} />}
-              {(user?.role !== "root") && <AssistantMini />}
-            </div>
-                          {(user?.role !== "root") && <Recommendations events={upcomingEvents}  />}
-              </>
-            )}
-          </div>
-          <div className="flex h-full flex-col gap-4">
-            <TrustCard />
-            <ServicesCard />
-            <ContactCard />
-          </div>
+          {user?.role === "root" ? (
+            <>
+              <MemberInfoView
+                profile={profile}
+                onUpdateProfile={() => setShowUpdateModal(true)}
+                onPayment={() => setShowPayment(true)}
+              />
+              <div className="mt-4">
+                <RootDashboard />
+              </div>
+            </>
+          ) : (
+            <MemberInfoView
+              profile={profile}
+              onUpdateProfile={() => setShowUpdateModal(true)}
+              onPayment={() => setShowPayment(true)}
+            />
+          )}
         </div>
-      </div>
-      )}
-          {showProfileModal && (
-        <ProfileViewModal profile={profile} onClose={() => setShowProfileModal(false)} />
       )}
       {showBenefits && (
         <BenefitsModal tier={profile?.tier} onClose={() => setShowBenefits(false)} />

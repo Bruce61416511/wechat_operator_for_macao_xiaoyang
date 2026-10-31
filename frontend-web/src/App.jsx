@@ -9,6 +9,7 @@ import ApplyPage from "./components/ApplyPage.jsx";
 import MemberPage from "./components/MemberPage.jsx";
 import ReviewPage from "./components/ReviewPage.jsx";
 import LoginPage from "./components/LoginPage.jsx";
+import MemberLoginPage from "./components/MemberLoginPage.jsx";
 import TrackPage from "./components/TrackPage.jsx";
 import EventCenterPage from "./components/EventCenterPage.jsx";
 import MemberManagementPage from "./components/MemberManagementPage.jsx";
@@ -28,7 +29,7 @@ function ProtectedRoute({ children }) {
   if (loading) return null;
   if (!user) {
     const current = window.location.pathname + window.location.search;
-    window.location.href = "/login?redirect=" + encodeURIComponent(current);
+    window.location.href = "/member/login?redirect=" + encodeURIComponent(current);
     return null;
   }
   return children;
@@ -50,9 +51,12 @@ function AppRoutes() {
   const path = window.location.pathname;
 
   if (path === "/login") return <LoginPage />;
+  if (path === "/member/login") return <MemberLoginPage />;
   if (path === "/apply") return <ApplyPage />;
   if (path === "/track") return <TrackPage />;
-  if (path === "/events") return <EventCenterPage role={JSON.parse(atob((sessionStorage.getItem("token") || ".").split(".")[0]) || "{}").role || "member"} />;
+  if (path === "/events") return (
+    <EventCenterPage role={JSON.parse(atob((sessionStorage.getItem("token") || ".").split(".")[0]) || "{}").role || "member"} />
+  );
 
   if (path === "/member") {
     return (

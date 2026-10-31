@@ -157,7 +157,7 @@ export default function HeroSection() {
   const { user } = useAuth();
 
   const quickActions = [
-    { label: '會員登錄', icon: UserIcon, href: user ? '/member' : '/login' },
+    { label: '會員登錄', icon: UserIcon, href: user ? '/member' : '/member/login' },
     { label: '申請入會', tone: 'primary', icon: DocumentIcon },
     { label: '進度查詢', icon: SearchCircleIcon, href: '/track' },
     { label: '會員權益', icon: DiamondIcon },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 const MEMBERS_API = "/v1/admin/members";
 const APPS_API = "/v1/admin/members/applications";
@@ -203,7 +203,13 @@ export default function MemberManagementPage() {
   const [msg, setMsg] = useState("");
   const [activeTab, setActiveTab] = useState("全部會員");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [expandedId, setExpandedId] = useState(null);
+  // 搜索防抖：輸入即時反映在輸入框，過濾計算延遲 300ms，避免每次按鍵重渲染整表
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
   const [editTarget, setEditTarget] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -234,18 +240,13 @@ export default function MemberManagementPage() {
   useEffect(() => { refreshApps(); }, []); // 首次掛載載入
 
   async function fetchData() {
+    if (isAppTab) return; // 申請列表由 allApps 緩存 + useMemo 計算，無需在此拉取/重設
     setLoading(true);
     try {
-      if (isAppTab) {
-        // Filter from cached data
-        const items = allApps.filter(a => a.status === activeTab);
-        setApplications(items);
-      } else {
-        const res = await fetch(MEMBERS_API + "?page_size=200", { headers: authHeaders });
-        if (!res.ok) throw new Error("獲取數據失敗");
-        const data = await res.json();
-        setMembers(data.items || []);
-      }
+      const res = await fetch(MEMBERS_API + "?page_size=200", { headers: authHeaders });
+      if (!res.ok) throw new Error("獲取數據失敗");
+      const data = await res.json();
+      setMembers(data.items || []);
     } catch (e) {
       setMsg(e.message);
     } finally {
@@ -253,25 +254,41 @@ export default function MemberManagementPage() {
     }
   }
 
-  useEffect(() => { fetchData(); }, [activeTab, allApps]);
+  // 僅在切換 tab 時拉取會員列表，刪除申請(allApps 變化)不再無謂重拉會員（解耦數據流）
+  useEffect(() => { fetchData(); }, [activeTab]);
 
   const isMemberTab = !isAppTab;
 
-  // Filtered data
-  const memberFiltered = members.filter(m => {
-    const matchTab = activeTab === "全部會員" || m.tier === activeTab;
-    if (!search.trim() || !isMemberTab) return matchTab;
-    const q = search.toLowerCase();
-    return matchTab && ((m.real_name||"").toLowerCase().includes(q) || (m.username||"").toLowerCase().includes(q) || (m.phone||"").toLowerCase().includes(q));
-  });
+  // 會員過濾：依賴 debouncedSearch，輸入防抖後才重算，避免每次按鍵重渲染整表
+  const memberFiltered = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    return members.filter(m => {
+      const matchTab = activeTab === "全部會員" || m.tier === activeTab;
+      if (!q || !isMemberTab) return matchTab;
+      return matchTab && ((m.real_name||"").toLowerCase().includes(q) || (m.username||"").toLowerCase().includes(q) || (m.phone||"").toLowerCase().includes(q));
+    });
+  }, [members, activeTab, isMemberTab, debouncedSearch]);
 
-  const appFiltered = applications.filter(app => {
-    if (!search.trim() || !isAppTab) return true;
-    const q = search.toLowerCase();
-    return (app.applicant_name||"").toLowerCase().includes(q) || (app.username||"").toLowerCase().includes(q) || (app.applicant_phone||"").toLowerCase().includes(q);
-  });
+  // 申請過濾：直接基於 allApps 緩存計算；刪除申請後 allApps 變化即自動更新，不再依賴 fetchData 重拉
+  const appFiltered = useMemo(() => {
+    const byTab = allApps.filter(a => a.status === activeTab);
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return byTab;
+    return byTab.filter(a =>
+      (a.applicant_name||"").toLowerCase().includes(q) ||
+      (a.username||"").toLowerCase().includes(q) ||
+      (a.applicant_phone||"").toLowerCase().includes(q)
+    );
+  }, [allApps, activeTab, debouncedSearch]);
 
-  const totalCount = isAppTab ? applications.length : members.length;
+  // 會員各 tab 計數緩存，避免每次渲染（含搜索/展開）重複 filter
+  const memberTabCounts = useMemo(() => {
+    const counts = {};
+    MEMBER_TABS.forEach(t => { counts[t] = t === "全部會員" ? members.length : members.filter(m => m.tier === t).length; });
+    return counts;
+  }, [members]);
+
+  const totalCount = isAppTab ? allApps.filter(a => a.status === activeTab).length : members.length;
 
   // Edit (members only)
   function openEdit(member) {
@@ -378,7 +395,7 @@ export default function MemberManagementPage() {
         <div className="flex items-center gap-1 mb-2 flex-wrap">
           {/* Member tabs */}
           {MEMBER_TABS.map(tab => {
-            const cnt = tab === "全部會員" ? members.length : members.filter(m => m.tier === tab).length;
+            const cnt = memberTabCounts[tab];
             return (
               <button key={tab} onClick={() => { setActiveTab(tab); setExpandedId(null); }}
                 className={`px-4 py-2 rounded-[7px] text-[13px] font-semibold transition ${activeTab === tab ? "bg-[#e7f5f0] text-[#006252]" : "text-[#6a7679] hover:bg-[#f4f7f6]"}`}>

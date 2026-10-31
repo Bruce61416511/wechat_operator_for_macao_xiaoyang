@@ -24,6 +24,8 @@ class LoginRequest(BaseModel):
 
 class WxLoginRequest(BaseModel):
     code: str
+    email: str | None = None
+    password: str | None = None
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -45,6 +47,11 @@ async def login(req: LoginRequest, db = Depends(get_db)):
         raise HTTPException(status_code=401, detail="用戶名或密碼錯誤")
     if not verify_password(req.password, member.password_hash):
         raise HTTPException(status_code=401, detail="用戶名或密碼錯誤")
+    return await _login_response(member, db)
+
+
+async def _login_response(member: Member, db) -> TokenResponse:
+    """統一登錄簽發：計算角色、檢查在籍/申請狀態、簽發 token（sub=會員 UUID）"""
     tier_to_role = {"理事": "root"}
     role = tier_to_role.get(member.tier, member.tier)
     if role != "root":
@@ -67,17 +74,40 @@ async def login(req: LoginRequest, db = Depends(get_db)):
 
 
 @router.post("/wx-login", response_model=TokenResponse)
-async def wx_login(req: WxLoginRequest):
+async def wx_login(req: WxLoginRequest, db = Depends(get_db)):
+    # 1. code 換 openid（微信側唯一標識）
     url = "https://api.weixin.qq.com/sns/jscode2session"
     params = {"appid": settings.wechat_appid, "secret": settings.wechat_secret, "js_code": req.code, "grant_type": "authorization_code"}
     async with httpx.AsyncClient() as client:
         resp = await client.get(url, params=params)
         data = resp.json()
     if "errcode" in data and data["errcode"] != 0:
-        raise HTTPException(status_code=400, detail=f"微信登錄失敗: {data.get("errmsg", "unknown")}")
+        raise HTTPException(status_code=400, detail=f"微信登錄失敗: {data.get('errmsg', 'unknown')}")
     openid = data.get("openid")
-    token = create_access_token(data={"sub": openid})
-    return TokenResponse(access_token=token)
+    if not openid:
+        raise HTTPException(status_code=400, detail="微信登錄失敗: 未獲取到 openid")
+
+    # 2. 按 openid 查已綁定會員 → 直接登錄
+    result = await db.execute(select(Member).where(Member.wechat_openid == openid))
+    member = result.scalar_one_or_none()
+    if member:
+        return await _login_response(member, db)
+
+    # 3. 未綁定：必須補郵箱+密碼，匹配並綁定現有會員（不新建，避免雙賬號/字段不全）
+    if not req.email or not req.password:
+        raise HTTPException(status_code=409, detail="該微信尚未綁定賬號，請提供郵箱與密碼以綁定現有會員")
+    username = req.email.strip().lower() if "@" in req.email else req.email.strip()
+    result = await db.execute(select(Member).where(Member.username == username))
+    member = result.scalar_one_or_none()
+    if not member:
+        raise HTTPException(status_code=404, detail="未找到該郵箱對應的會員，請先於網頁註冊或使用完整註冊")
+    if not verify_password(req.password, member.password_hash):
+        raise HTTPException(status_code=401, detail="郵箱或密碼錯誤")
+    if member.wechat_openid and member.wechat_openid != openid:
+        raise HTTPException(status_code=409, detail="該郵箱已綁定其他微信賬號")
+    member.wechat_openid = openid
+    await db.commit()
+    return await _login_response(member, db)
 
 
 @router.get("/verify")
@@ -113,10 +143,11 @@ class RegisterRequest(BaseModel):
     password: str
     real_name: str
     phone: str
-    phone_country_code: str = "+853"
-    id_type: str = "mainland_id"
+    phone_country_code: str
+    id_type: str
     id_number: str
     address: str | None = None
+    openid: str | None = None
 
 
 VALID_ID_TYPES = {"mainland_id", "hkmo_pass", "macao_id", "passport"}
@@ -151,6 +182,11 @@ async def register(req: RegisterRequest, db = Depends(get_db)):
     if not phone or not (5 <= len(phone) <= 15):
         raise HTTPException(status_code=400, detail="手機號格式不正確")
 
+    # 4.1 國家/地區碼必填校驗（須以 + 開頭，如 +853/+852/+86）
+    phone_country_code = req.phone_country_code.strip()
+    if not phone_country_code or not phone_country_code.startswith("+"):
+        raise HTTPException(status_code=400, detail="國家/地區碼不能為空且須以 + 開頭")
+
     # 5. 唯一性查重：郵箱
     result = await db.execute(select(Member).where(Member.username == username))
     if result.scalar_one_or_none():
@@ -171,16 +207,17 @@ async def register(req: RegisterRequest, db = Depends(get_db)):
         password_hash=hash_password(req.password),
         real_name=req.real_name.strip(),
         phone=phone,
-        phone_country_code=req.phone_country_code,
+        phone_country_code=phone_country_code,
         id_type=req.id_type,
         id_number=id_number,
         address=req.address,
+        wechat_openid=req.openid,
         tier="個人會員",
         member_type="individual",
         annual_fee=TIER_FEE.get("個人會員", 500),
         is_active=True,
         joined_at=now,
-        expires_at=now + timedelta(days=365),
+        expires_at=None,  # 永久有效；保留到期機制：日後為某會員填具體日期即重新啟用過期邏輯
     )
     db.add(member)
     await db.commit()

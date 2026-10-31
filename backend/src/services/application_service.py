@@ -124,7 +124,7 @@ class ApplicationService:
             company_name=app.company_name,
             business_reg_no=app.business_reg_no,
             joined_at=datetime.now(timezone.utc),
-            expires_at=datetime.now(timezone.utc) + timedelta(days=365),
+            expires_at=None,  # 永久有效；保留到期機制：日後為某會員填具體日期即重新啟用過期邏輯
         )
         self.db.add(member)
         await self.db.flush()
