@@ -674,7 +674,7 @@ function MemberInfoView({ profile, onUpdateProfile, onPayment }) {
           </div>
           <div>
             <InfoRow label="會員級別" value={profile?.tier} />
-            <InfoRow label="年費" value={profile?.annual_fee ? `${profile.annual_fee} 澳門元` : null} />
+            <InfoRow label="年費" value={profile?.annual_fee ? `${profile.annual_fee} 澳門元` : "-"} />
             <InfoRow label="狀態" value={profile?.is_active ? "有效" : "已停用"} />
             <InfoRow label="通訊地址" value={profile?.address} />
             <InfoRow label="註冊時間" value={profile?.created_at ? new Date(profile.created_at).toLocaleDateString("zh-CN") : null} />

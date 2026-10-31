@@ -99,7 +99,7 @@ class ApplicationService:
             member = member_result.scalar_one_or_none()
             if member:
                 member.tier = app.requested_tier or member.tier
-                member.annual_fee = TIER_FEE.get(app.requested_tier, 500)
+                member.annual_fee = 0  # 免年費模式：所有會員年費統一為 0
                 member.is_active = True
                 member.updated_at = datetime.now(timezone.utc)
                 app.status = "已入會"
@@ -116,7 +116,7 @@ class ApplicationService:
             phone_country_code=app.phone_country_code,
             tier=app.requested_tier or "個人會員",
             password_hash=app.password_hash,
-            annual_fee=TIER_FEE.get(app.requested_tier, 500),
+            annual_fee=0,  # 免年費模式：所有會員年費統一為 0
             address=app.applicant_address,
             career_history=app.career_history,
             qualifications=app.qualifications,

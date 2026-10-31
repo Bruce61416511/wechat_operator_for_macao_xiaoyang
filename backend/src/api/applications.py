@@ -176,7 +176,7 @@ async def final_review(app_id: str, body: FinalReviewRequest, user: dict = Depen
                 member.real_name = app.applicant_name
                 if tier_changed:
                     member.tier = app.requested_tier
-                    member.annual_fee = TIER_FEE.get(app.requested_tier, member.annual_fee)
+                    member.annual_fee = 0  # 免年費模式：所有會員年費統一為 0
                     member.updated_at = datetime.now(timezone.utc)
                     await db.flush()
                     await app_svc.transition_status(app.id, "待繳費")
